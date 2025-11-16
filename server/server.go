@@ -10,25 +10,28 @@ import (
 
 type Server struct {
 	upgrader   *websocket.Upgrader
-	conns      map[*websocket.Conn]bool
-	register   chan *websocket.Conn
-	unregister chan *websocket.Conn
-	buffer     chan Message
+	clients    map[*Client]bool
+	register   chan *Client
+	unregister chan *Client
+	rBuf       chan *Message
+	wBufSize   int
 	Cancel     chan struct{}
 	errC       chan error
 	Wg         *sync.WaitGroup
 }
 
-func New(rBufSize int, wBufSize int, mBufSize int, eBufSize int) *Server {
-	server := &Server{}
+func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *Server {
+	server := &Server{
+		clients:    make(map[*Client]bool, 0),
+		rBuf:       make(chan *Message, RBufSize),
+		Cancel:     make(chan struct{}),
+		errC:       make(chan error, eBufSize),
+		Wg:         &sync.WaitGroup{},
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+		wBufSize:   WBufSize,
+	}
 	server.SetUpgrader(rBufSize, wBufSize)
-	server.conns = make(map[*websocket.Conn]bool, 0)
-	server.buffer = make(chan Message, mBufSize)
-	server.Cancel = make(chan struct{})
-	server.errC = make(chan error, eBufSize)
-	server.Wg = &sync.WaitGroup{}
-	server.register = make(chan *websocket.Conn)
-	server.unregister = make(chan *websocket.Conn)
 	return server
 }
 
@@ -40,41 +43,57 @@ func (s *Server) Run() {
 		for {
 			select {
 			case <-s.Cancel:
+				close(s.register)
+				close(s.rBuf)
+				for c := range s.clients {
+					close(c.WChan)
+				}
+				close(s.unregister)
+				close(s.errC)
 				break Cancel
 			case c := <-s.register:
-				s.conns[c] = true
-				s.Wg.Add(1)
+				s.clients[c] = true
+				s.Wg.Add(2)
+				go s.HandleWrite(c)
 				go s.HandleRead(c)
 			case c := <-s.unregister:
-				_, ok := s.conns[c]
+				_, ok := s.clients[c]
 				if ok {
-					delete(s.conns, c)
+					close(c.WChan)
+					c.Conn.Close()
+					delete(s.clients, c)
 				}
-			case message := <-s.buffer:
-				if message.Err != nil {
-					s.errC <- fmt.Errorf("write: receive error message: %s", message.Err)
-					continue
-				}
-				sender := message.Sender
-				mes := message.Message
-				for c := range s.conns {
+			case m := <-s.rBuf:
+				sender := m.Sender
+				mes := m.Message
+				for c := range s.clients {
 					if c == sender {
 						continue
 					}
-					// 如果每个conn writer都有个buffered channel就好了
-					s.Wg.Go(func() {
-						err := c.WriteMessage(websocket.TextMessage, []byte(mes))
-						if err != nil {
-							s.errC <- fmt.Errorf("write: error during writing: %s", err)
-							s.unregister <- c
-							return
-						}
-					})
+					c.WChan <- mes
 				}
 			}
 		}
 		s.Wg.Done()
 	}()
+}
+
+func (s *Server) HandleWrite(c *Client) {
+Cancel:
+	for {
+		select {
+		case <-s.Cancel:
+			break Cancel
+		case mes := <-c.WChan:
+			err := c.Conn.WriteMessage(websocket.TextMessage, []byte(mes))
+			if err != nil {
+				s.errC <- fmt.Errorf("write: error during writing: %s", err)
+				s.unregister <- c
+				break Cancel
+			}
+		}
+	}
+	s.Wg.Done()
 }
 
 func (s *Server) SetUpgrader(rBufSize int, wBufSize int) {
@@ -89,7 +108,7 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("server: unable to upgrade the HTTP server connection to the WebSocket protocol: %s", err)
 	}
-	s.register <- conn
+	s.register <- &Client{conn, make(chan string, s.wBufSize)}
 	return nil
 }
 
@@ -107,24 +126,23 @@ Cancel:
 	s.Wg.Done()
 }
 
-func (s *Server) HandleRead(conn *websocket.Conn) {
+func (s *Server) HandleRead(c *Client) {
 Cancel:
 	for {
 		select {
 		case <-s.Cancel:
 			break Cancel
 		default:
-			_, data, err := conn.ReadMessage()
+			_, data, err := c.Conn.ReadMessage()
 			if err != nil {
 				err = fmt.Errorf("reader: cannot read message: %s", err)
-				conn.Close()
-				s.unregister <- conn
+				s.unregister <- c
 				s.errC <- err
 				break Cancel
 			} else if len(data) == 0 {
 				continue
 			}
-			s.buffer <- Message{conn, string(data), err}
+			s.rBuf <- &Message{c, string(data)}
 		}
 	}
 

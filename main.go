@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	s := server.New(1024, 1024, 1024, 1024)
+	s := server.New(1024, 1024, 1024, 1024, 1024)
 	defer close(s.Cancel)
 	s.Run()
 
