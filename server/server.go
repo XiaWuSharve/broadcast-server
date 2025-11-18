@@ -1,9 +1,9 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -17,7 +17,6 @@ type Server struct {
 	wBufSize   int
 	Cancel     chan struct{}
 	errC       chan error
-	Wg         *sync.WaitGroup
 }
 
 func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *Server {
@@ -26,7 +25,6 @@ func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *
 		rBuf:       make(chan *Message, RBufSize),
 		Cancel:     make(chan struct{}),
 		errC:       make(chan error, eBufSize),
-		Wg:         &sync.WaitGroup{},
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		wBufSize:   WBufSize,
@@ -35,32 +33,27 @@ func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *
 	return server
 }
 
-func (s *Server) Run() {
-	s.Wg.Add(2)
+func (s *Server) Run(httpServer *http.Server) {
 	go s.HandleError()
+
 	go func() {
 	Cancel:
 		for {
 			select {
 			case <-s.Cancel:
-				close(s.register)
-				close(s.rBuf)
 				for c := range s.clients {
-					close(c.WChan)
+					c.Conn.Close()
 				}
-				close(s.unregister)
-				close(s.errC)
 				break Cancel
 			case c := <-s.register:
 				s.clients[c] = true
-				s.Wg.Add(2)
 				go s.HandleWrite(c)
 				go s.HandleRead(c)
 			case c := <-s.unregister:
 				_, ok := s.clients[c]
 				if ok {
-					close(c.WChan)
 					c.Conn.Close()
+					close(c.WChan)
 					delete(s.clients, c)
 				}
 			case m := <-s.rBuf:
@@ -74,7 +67,20 @@ func (s *Server) Run() {
 				}
 			}
 		}
-		s.Wg.Done()
+	}()
+
+	go func() {
+		// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "home.html") })
+		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			err := s.CreateConn(w, r)
+			if err != nil {
+				fmt.Println(err)
+			}
+		})
+		fmt.Println("server started at ws://localhost:8080/ws")
+		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			s.errC <- err
+		}
 	}()
 }
 
@@ -93,7 +99,6 @@ Cancel:
 			}
 		}
 	}
-	s.Wg.Done()
 }
 
 func (s *Server) SetUpgrader(rBufSize int, wBufSize int) {
@@ -107,6 +112,9 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return fmt.Errorf("server: unable to upgrade the HTTP server connection to the WebSocket protocol: %s", err)
+	}
+	if s.register == nil {
+		return fmt.Errorf("server: register failed: empty channel")
 	}
 	s.register <- &Client{conn, make(chan string, s.wBufSize)}
 	return nil
@@ -122,8 +130,6 @@ Cancel:
 			fmt.Printf("log: %s\n", err)
 		}
 	}
-
-	s.Wg.Done()
 }
 
 func (s *Server) HandleRead(c *Client) {
@@ -138,13 +144,9 @@ Cancel:
 				err = fmt.Errorf("reader: cannot read message: %s", err)
 				s.unregister <- c
 				s.errC <- err
-				break Cancel
-			} else if len(data) == 0 {
-				continue
+				break
 			}
 			s.rBuf <- &Message{c, string(data)}
 		}
 	}
-
-	s.Wg.Done()
 }
