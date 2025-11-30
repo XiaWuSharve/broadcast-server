@@ -144,7 +144,7 @@ Cancel:
 				err = fmt.Errorf("reader: cannot read message: %s", err)
 				s.unregister <- c
 				s.errC <- err
-				break
+				break Cancel
 			}
 			s.rBuf <- &Message{c, string(data)}
 		}
