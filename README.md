@@ -1,4 +1,4 @@
-the project URL of this solution can be found at [here](https://roadmap.sh/projects/broadcast-server). 
+The project URL of this solution can be found [here](https://roadmap.sh/projects/broadcast-server). 
 
 # Usage
 
