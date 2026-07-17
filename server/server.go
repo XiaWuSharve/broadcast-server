@@ -1,11 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/segmentio/encoding/json"
 )
 
 type Server struct {
@@ -13,7 +15,7 @@ type Server struct {
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
-	rBuf       chan *Message
+	rBuf       chan *ClientMessage
 	wBufSize   int
 	Cancel     chan struct{}
 	errC       chan error
@@ -22,7 +24,7 @@ type Server struct {
 func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *Server {
 	server := &Server{
 		clients:    make(map[*Client]bool, 0),
-		rBuf:       make(chan *Message, RBufSize),
+		rBuf:       make(chan *ClientMessage, RBufSize),
 		Cancel:     make(chan struct{}),
 		errC:       make(chan error, eBufSize),
 		register:   make(chan *Client),
@@ -146,7 +148,9 @@ Cancel:
 				s.errC <- err
 				break Cancel
 			}
-			s.rBuf <- &Message{c, string(data)}
+			var message 
+			json.Unmarshal(data)
+			s.rBuf <- &ClientMessage{c, string(data)}
 		}
 	}
 }
