@@ -5,7 +5,10 @@ package cmd
 
 import (
 	"context"
+	"crypto/pbkdf2"
+	"crypto/sha1"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +17,8 @@ import (
 
 	"github.com/XiaWuSharve/broadcast-server/server"
 	"github.com/spf13/cobra"
+
+	"github.com/xtaci/kcp-go/v5"
 )
 
 // startCmd represents the start command
@@ -22,25 +27,52 @@ var startCmd = &cobra.Command{
 	Short: "Start a broadcast server. ",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		s := server.New(1024, 1024, 1024, 1024, 1024)
-		fmt.Println("starting...")
-		httpServer := &http.Server{
-			Addr: ":8080",
-		}
-		s.Run(httpServer)
+		use_ws := cmd.Flag("use_ws").Value.String()
 
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt)
-		signal.Notify(sig, syscall.SIGTERM)
-		<-sig
+		if use_ws == "true" {
+			fmt.Println("starting websocket server...")
+			s := server.New(1024, 1024, 1024, 1024, 1024)
+			httpServer := &http.Server{
+				Addr: ":8080",
+			}
+			s.Run(httpServer)
+			sig := make(chan os.Signal, 1)
+			signal.Notify(sig, os.Interrupt)
+			signal.Notify(sig, syscall.SIGTERM)
+			<-sig
 
-		fmt.Println("exiting...")
-		close(s.Cancel)
-		shutDownCtx, timeoutRelease := context.WithTimeout(context.Background(), 10*time.Second)
-		if err := httpServer.Shutdown(shutDownCtx); err != nil {
-			fmt.Printf("unable to close server: %s", err)
+			fmt.Println("exiting...")
+			close(s.Cancel)
+			shutDownCtx, timeoutRelease := context.WithTimeout(context.Background(), 10*time.Second)
+			if err := httpServer.Shutdown(shutDownCtx); err != nil {
+				log.Fatalf("unable to close server: %s", err)
+			}
+			timeoutRelease()
+		} else {
+			fmt.Println("starting kcp server...")
+			key, err := pbkdf2.Key(sha1.New, "demo pass", []byte("demo salt"), 1024, 32)
+			if err != nil {
+				log.Fatal("failed to generate key:", err)
+				return
+			}
+			block, _ := kcp.NewAESBlockCrypt(key)
+
+			listener, err := kcp.ListenWithOptions("127.0.0.1:8080", block, 10, 3)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			defer listener.Close()
+			for {
+				s, err := listener.AcceptKCP()
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
+				go server.HandleEcho(s)
+			}
 		}
-		timeoutRelease()
+
 	},
 }
 

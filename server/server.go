@@ -9,6 +9,7 @@ import (
 )
 
 type Server struct {
+	ServerBase
 	upgrader   *websocket.Upgrader
 	clients    map[*Client]bool
 	register   chan *Client
@@ -82,6 +83,20 @@ func (s *Server) Run(httpServer *http.Server) {
 			s.errC <- err
 		}
 	}()
+}
+
+func (s *Server) Listen() {
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "home.html") })
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		err := s.CreateConn(w, r)
+		if err != nil {
+			fmt.Println(err)
+		}
+	})
+	fmt.Println("server started at ws://localhost:8080/ws")
+	if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		s.errC <- err
+	}
 }
 
 func (s *Server) HandleWrite(c *Client) {
