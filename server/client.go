@@ -1,8 +1,42 @@
 package server
 
-import "github.com/gorilla/websocket"
+import (
+	"fmt"
+
+	"github.com/gorilla/websocket"
+)
 
 type Client struct {
-	Conn  *websocket.Conn
-	WChan chan string
+	Conn      *websocket.Conn
+	Id        string
+	WriteChan chan []byte
+	ReadChan  chan []byte
+}
+
+func (c *Client) Receive() ([]byte, error) {
+	_, bytes, err := c.Conn.ReadMessage()
+	return bytes, err
+}
+
+func (c *Client) Send(mess []byte) error {
+	return c.Conn.WriteMessage(websocket.TextMessage, []byte(mess))
+}
+
+func (c *Client) HandleReceive() error {
+	for {
+		data, err := c.Receive()
+		if err != nil {
+			return fmt.Errorf("failed to handle receive: %v", err)
+		}
+		c.ReadChan <- data
+	}
+}
+
+func (c *Client) HandleSend() error {
+	for data := range c.WriteChan {
+		if err := c.Send(data); err != nil {
+			return fmt.Errorf("failed to handle Send: %v", err)
+		}
+	}
+	return nil
 }

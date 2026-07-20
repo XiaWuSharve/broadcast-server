@@ -1,16 +1,11 @@
 package request
 
-import "github.com/XiaWuSharve/broadcast-server/server"
+// import "github.com/XiaWuSharve/broadcast-server/server"
 
-type ClientMessage struct {
-	Sender  *server.Client
-	Message string
-}
-
-type Message struct {
-	Type string              `json:"type"`
-	Data map[string]struct{} `json:"data"`
-}
+// type ClientMessage struct {
+// 	Sender  *server.Client
+// 	Message string
+// }
 
 type ConnectMessage = string
 

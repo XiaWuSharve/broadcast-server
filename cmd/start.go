@@ -22,12 +22,12 @@ var startCmd = &cobra.Command{
 	Short: "Start a broadcast server. ",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		s := server.New(1024, 1024, 1024, 1024, 1024)
+		s := server.New(1024, 1024)
 		fmt.Println("starting...")
 		httpServer := &http.Server{
-			Addr: ":8080",
+			Addr: "192.168.239.33:3001",
 		}
-		s.Run(httpServer)
+		s.Start(httpServer)
 
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, os.Interrupt)

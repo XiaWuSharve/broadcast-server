@@ -4,106 +4,45 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
+	"github.com/XiaWuSharve/broadcast-server/dto"
+	"github.com/XiaWuSharve/broadcast-server/dto/request"
+	"github.com/XiaWuSharve/broadcast-server/dto/response"
 	"github.com/gorilla/websocket"
-	"github.com/segmentio/encoding/json"
 )
 
 type Server struct {
 	upgrader   *websocket.Upgrader
-	clients    map[*Client]bool
-	register   chan *Client
-	unregister chan *Client
-	rBuf       chan *ClientMessage
-	wBufSize   int
+	registered *ConcurrentMap[string, *Client]
 	Cancel     chan struct{}
-	errC       chan error
 }
 
-func New(rBufSize int, wBufSize int, RBufSize int, eBufSize int, WBufSize int) *Server {
+func New(rBufSize int, wBufSize int) *Server {
 	server := &Server{
-		clients:    make(map[*Client]bool, 0),
-		rBuf:       make(chan *ClientMessage, RBufSize),
+		registered: NewConcurrentMap[string, *Client](),
 		Cancel:     make(chan struct{}),
-		errC:       make(chan error, eBufSize),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		wBufSize:   WBufSize,
 	}
-	server.SetUpgrader(rBufSize, wBufSize)
+	server.setUpgrader(rBufSize, wBufSize)
 	return server
 }
 
-func (s *Server) Run(httpServer *http.Server) {
-	go s.HandleError()
-
-	go func() {
-	Cancel:
-		for {
-			select {
-			case <-s.Cancel:
-				for c := range s.clients {
-					c.Conn.Close()
-				}
-				break Cancel
-			case c := <-s.register:
-				s.clients[c] = true
-				go s.HandleWrite(c)
-				go s.HandleRead(c)
-			case c := <-s.unregister:
-				_, ok := s.clients[c]
-				if ok {
-					c.Conn.Close()
-					close(c.WChan)
-					delete(s.clients, c)
-				}
-			case m := <-s.rBuf:
-				sender := m.Sender
-				mes := m.Message
-				for c := range s.clients {
-					if c == sender {
-						continue
-					}
-					c.WChan <- mes
-				}
-			}
+func (s *Server) Start(httpServer *http.Server) {
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "home.html") })
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		err := s.CreateConn(w, r)
+		if err != nil {
+			slog.Error("cannot create conn", "err", err)
 		}
-	}()
-
-	go func() {
-		// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "home.html") })
-		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-			err := s.CreateConn(w, r)
-			if err != nil {
-				fmt.Println(err)
-			}
-		})
-		fmt.Println("server started at ws://localhost:8080/ws")
-		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			s.errC <- err
-		}
-	}()
-}
-
-func (s *Server) HandleWrite(c *Client) {
-Cancel:
-	for {
-		select {
-		case <-s.Cancel:
-			break Cancel
-		case mes := <-c.WChan:
-			err := c.Conn.WriteMessage(websocket.TextMessage, []byte(mes))
-			if err != nil {
-				s.errC <- fmt.Errorf("write: error during writing: %s", err)
-				s.unregister <- c
-				break Cancel
-			}
-		}
+	})
+	slog.Info("server started at ws://192.168.239.33:3001/ws")
+	if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("cannot ListenAndServe", "err", err)
 	}
 }
 
-func (s *Server) SetUpgrader(rBufSize int, wBufSize int) {
+func (s *Server) setUpgrader(rBufSize int, wBufSize int) {
 	s.upgrader = &websocket.Upgrader{
 		ReadBufferSize:  rBufSize,
 		WriteBufferSize: wBufSize,
@@ -115,42 +54,103 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("server: unable to upgrade the HTTP server connection to the WebSocket protocol: %s", err)
 	}
-	if s.register == nil {
-		return fmt.Errorf("server: register failed: empty channel")
+
+	c := &Client{
+		Conn:      conn,
+		Id:        "",
+		WriteChan: make(chan []byte),
+		ReadChan:  make(chan []byte),
 	}
-	s.register <- &Client{conn, make(chan string, s.wBufSize)}
+	go func() {
+		if err := s.Handle(c); err != nil {
+			slog.Error("failed to handle read", "err", err, "id", c.Id)
+		}
+	}()
+
+	go func() {
+		if err := c.HandleSend(); err != nil {
+			slog.Error("failed to HandleSend", "err", err, "id", c.Id)
+		}
+	}()
+	go func() {
+		if err := c.HandleReceive(); err != nil {
+			slog.Error("failed to HandleReceive", "err", err, "id", c.Id)
+		}
+	}()
 	return nil
 }
 
-func (s *Server) HandleError() {
-Cancel:
+func (s *Server) Handle(c *Client) error {
 	for {
 		select {
 		case <-s.Cancel:
-			break Cancel
-		case err := <-s.errC:
-			fmt.Printf("log: %s\n", err)
-		}
-	}
-}
-
-func (s *Server) HandleRead(c *Client) {
-Cancel:
-	for {
-		select {
-		case <-s.Cancel:
-			break Cancel
-		default:
-			_, data, err := c.Conn.ReadMessage()
-			if err != nil {
-				err = fmt.Errorf("reader: cannot read message: %s", err)
-				s.unregister <- c
-				s.errC <- err
-				break Cancel
+			return fmt.Errorf("canceled")
+		case data := <-c.ReadChan:
+			var message dto.Message
+			if err := json.Unmarshal(data, &message); err != nil {
+				slog.Error("cannot parse", "err", err, "data", string(data))
 			}
-			var message 
-			json.Unmarshal(data)
-			s.rBuf <- &ClientMessage{c, string(data)}
+
+			switch message.Type {
+			case dto.CONNECT:
+				var id request.ConnectMessage
+				if err := json.Unmarshal(message.Data, &id); err != nil {
+					slog.Error("cannot parse", "err", err, "data", string(data))
+				}
+				c.Id = id
+				s.registered.Set(c.Id, c)
+			case dto.CALL:
+				var callMess request.CallMessage
+				if err := json.Unmarshal(message.Data, &callMess); err != nil {
+					slog.Error("cannot parse", "err", err, "data", string(data))
+				}
+				if _, ok := s.registered.Get(callMess.LocalId); !ok {
+					s.registered.Set(c.Id, c)
+				}
+				rc, ok := s.registered.Get(callMess.RemoteId)
+				if !ok {
+					slog.Error("remote id not found", "remote id", callMess.RemoteId, "local id", callMess.LocalId)
+				}
+				var callRsp = response.CallMessage{
+					Sdp:      callMess.Sdp,
+					RemoteId: callMess.LocalId,
+				}
+				data, _ := json.Marshal(callRsp)
+				message.Data = data
+				mess, _ := json.Marshal(message)
+				rc.Send(mess)
+			case dto.ANSWER:
+				var answerMess request.AnswerMessage
+				if err := json.Unmarshal(message.Data, &answerMess); err != nil {
+					slog.Error("cannot parse", "err", err, "data", string(data))
+				}
+				rc, ok := s.registered.Get(answerMess.RemoteId)
+				if !ok {
+					slog.Error("remote id not found", "remote id", answerMess.RemoteId)
+				}
+				var ansRsp response.AnswerMessage = answerMess.Sdp
+				message.Data = json.RawMessage(ansRsp)
+				mess, _ := json.Marshal(message)
+				rc.Send(mess)
+			case dto.CANDIDATE:
+				var candidateMess request.CandidateMessage
+				if err := json.Unmarshal(message.Data, &candidateMess); err != nil {
+					slog.Error("cannot parse", "err", err, "data", string(data))
+				}
+				rc, ok := s.registered.Get(candidateMess.RemoteId)
+				if !ok {
+					slog.Error("remote id not found", "remote id", candidateMess.RemoteId)
+				}
+				var candRsp = response.CandidateMessage{
+					SdpMid:        candidateMess.SdpMid,
+					SdpMLineIndex: candidateMess.SdpMLineIndex,
+					Sdp:           candidateMess.Sdp,
+				}
+				data, _ := json.Marshal(candRsp)
+				message.Data = data
+				mess, _ := json.Marshal(message)
+				rc.Send(mess)
+			}
 		}
 	}
 }

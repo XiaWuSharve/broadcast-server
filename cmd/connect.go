@@ -21,7 +21,7 @@ var connectCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := &websocket.Dialer{}
-		conn, _, err := client.Dial("ws://localhost:8080/ws", http.Header{})
+		conn, _, err := client.Dial("ws://localhost:3001/ws", http.Header{})
 		if err != nil {
 			fmt.Printf("client: connection failed: %v\n", err)
 		}
