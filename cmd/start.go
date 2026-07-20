@@ -25,7 +25,7 @@ var startCmd = &cobra.Command{
 		s := server.New(1024, 1024)
 		fmt.Println("starting...")
 		httpServer := &http.Server{
-			Addr: "192.168.239.33:3001",
+			Addr: "192.168.239.36:3001",
 		}
 		s.Start(httpServer)
 

@@ -36,7 +36,7 @@ func (s *Server) Start(httpServer *http.Server) {
 			slog.Error("cannot create conn", "err", err)
 		}
 	})
-	slog.Info("server started at ws://192.168.239.33:3001/ws")
+	slog.Info("server started at ws://192.168.239.36:3001/ws")
 	if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("cannot ListenAndServe", "err", err)
 	}

@@ -1,10 +1,5 @@
 package response
 
-type Message struct {
-	Type string              `json:"type"`
-	Data map[string]struct{} `json:"data"`
-}
-
 type ConnectMessage = string
 
 type CallMessage struct {
