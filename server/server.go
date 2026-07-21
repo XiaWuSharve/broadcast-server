@@ -8,8 +8,6 @@ import (
 	"net/http"
 
 	"github.com/XiaWuSharve/broadcast-server/dto"
-	"github.com/XiaWuSharve/broadcast-server/dto/request"
-	"github.com/XiaWuSharve/broadcast-server/dto/response"
 	"github.com/gorilla/websocket"
 )
 
@@ -82,6 +80,7 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 
 func (s *Server) Handle(c *Client) error {
 	for {
+	BEGIN:
 		select {
 		case <-s.Cancel:
 			return fmt.Errorf("canceled")
@@ -89,64 +88,54 @@ func (s *Server) Handle(c *Client) error {
 			var message dto.Message
 			if err := json.Unmarshal(data, &message); err != nil {
 				slog.Error("cannot parse", "err", err, "data", string(data))
+				continue
 			}
 
 			switch message.Type {
 			case dto.CONNECT:
-				var id request.ConnectMessage
+				var id dto.ConnectMessage
 				if err := json.Unmarshal(message.Data, &id); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
+					continue
 				}
 				c.Id = id
 				s.registered.Set(c.Id, c)
-			case dto.CALL:
-				var callMess request.CallMessage
-				if err := json.Unmarshal(message.Data, &callMess); err != nil {
-					slog.Error("cannot parse", "err", err, "data", string(data))
-				}
-				if _, ok := s.registered.Get(callMess.LocalId); !ok {
-					s.registered.Set(c.Id, c)
-				}
-				rc, ok := s.registered.Get(callMess.RemoteId)
-				if !ok {
-					slog.Error("remote id not found", "remote id", callMess.RemoteId, "local id", callMess.LocalId)
-				}
-				var callRsp = response.CallMessage{
-					Sdp:      callMess.Sdp,
-					RemoteId: callMess.LocalId,
-				}
-				data, _ := json.Marshal(callRsp)
-				message.Data = data
-				mess, _ := json.Marshal(message)
-				rc.Send(mess)
-			case dto.ANSWER:
-				var answerMess request.AnswerMessage
-				if err := json.Unmarshal(message.Data, &answerMess); err != nil {
-					slog.Error("cannot parse", "err", err, "data", string(data))
-				}
-				rc, ok := s.registered.Get(answerMess.RemoteId)
-				if !ok {
-					slog.Error("remote id not found", "remote id", answerMess.RemoteId)
-				}
-				var ansRsp response.AnswerMessage = answerMess.Sdp
-				message.Data = json.RawMessage(ansRsp)
-				mess, _ := json.Marshal(message)
-				rc.Send(mess)
 			case dto.CANDIDATE:
-				var candidateMess request.CandidateMessage
+				var candidateMess dto.CandidateMessage
 				if err := json.Unmarshal(message.Data, &candidateMess); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
+					continue
 				}
 				rc, ok := s.registered.Get(candidateMess.RemoteId)
 				if !ok {
 					slog.Error("remote id not found", "remote id", candidateMess.RemoteId)
+					continue
 				}
-				var candRsp = response.CandidateMessage{
-					SdpMid:        candidateMess.SdpMid,
-					SdpMLineIndex: candidateMess.SdpMLineIndex,
-					Sdp:           candidateMess.Sdp,
+				data, _ := json.Marshal(candidateMess)
+				message.Data = data
+				mess, _ := json.Marshal(message)
+				rc.Send(mess)
+			case dto.CHAT:
+				var chatMess dto.ChatMessage
+				if err := json.Unmarshal(message.Data, &chatMess); err != nil {
+					slog.Error("cannot parse", "err", err, "data", string(data))
+					continue
 				}
-				data, _ := json.Marshal(candRsp)
+				if _, ok := s.registered.Get(chatMess.LocalId); !ok {
+					s.registered.Set(c.Id, c)
+				}
+				rc, ok := s.registered.Get(chatMess.RemoteId)
+				if !ok {
+					slog.Error("remote id not found", "remote id", chatMess.RemoteId, "local id", chatMess.LocalId)
+					continue
+				}
+				for _, v := range chatMess.MessageChain {
+					if v.Type != dto.TEXT && v.Type != dto.CALL && v.Type != dto.ANSWER && v.Type != dto.ESTABLISH {
+						slog.Error("ilegal message unit type", "got", v.Type)
+						break BEGIN
+					}
+				}
+				data, _ := json.Marshal(chatMess)
 				message.Data = data
 				mess, _ := json.Marshal(message)
 				rc.Send(mess)
