@@ -28,9 +28,9 @@ const (
 type ConnectMessageResponse = ConnectStatus // status
 
 type CandidateMessage struct {
-	RemoteId      string `json:"sessionId"`
-	SdpMid        string `json:"sdpMid"`
-	SdpMLineIndex int    `json:"sdpMLineIndex"`
+	RemoteId      string `json:"remote_id"`
+	SdpMid        string `json:"sdp_mid"`
+	SdpMLineIndex int    `json:"sdp_m_line_index"`
 	Sdp           string `json:"sdp"`
 }
 

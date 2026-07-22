@@ -36,7 +36,7 @@ func (s *Server) Start(httpServer *http.Server) {
 		}
 	})
 	// TODO using config file
-	slog.Info("server started at ws://192.168.239.244:3001/ws")
+	slog.Info("server started at ws://0.0.0.0:3001/ws")
 	if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("cannot ListenAndServe", "err", err)
 	}
@@ -88,6 +88,7 @@ func (s *Server) Handle(c *Client) error {
 		case <-s.Cancel:
 			return fmt.Errorf("canceled")
 		case data := <-c.ReadChan:
+			slog.Debug("received", "raw message", string(data))
 			var message dto.Message
 			if err := json.Unmarshal(data, &message); err != nil {
 				slog.Error("cannot parse", "err", err, "data", string(data))
@@ -160,7 +161,6 @@ func (s *Server) Handle(c *Client) error {
 			}
 			**/
 			case dto.CHAT:
-				slog.Debug("received chat message", "id", c.Id, "raw json", message.Data)
 				var chatMess dto.ChatMessageRequest
 				if err := json.Unmarshal(message.Data, &chatMess); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
