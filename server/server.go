@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/XiaWuSharve/broadcast-server/dto"
 	"github.com/gorilla/websocket"
@@ -34,7 +35,8 @@ func (s *Server) Start(httpServer *http.Server) {
 			slog.Error("cannot create conn", "err", err)
 		}
 	})
-	slog.Info("server started at ws://192.168.239.36:3001/ws")
+	// TODO using config file
+	slog.Info("server started at ws://192.168.239.244:3001/ws")
 	if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("cannot ListenAndServe", "err", err)
 	}
@@ -79,6 +81,7 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) Handle(c *Client) error {
+	slog.Info("started to handle an anonymous client", "remote address", c.Conn.RemoteAddr().String())
 	for {
 	BEGIN:
 		select {
@@ -90,16 +93,41 @@ func (s *Server) Handle(c *Client) error {
 				slog.Error("cannot parse", "err", err, "data", string(data))
 				continue
 			}
-
+			timestamp := message.CreatedTime
+			now := time.Now().UnixMilli()
+			diff := timestamp - now
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff > 5*60*1000 { // 5分钟对应的毫秒数
+				slog.Error("client time too slow or fast", "client time", time.UnixMilli(timestamp).Format(time.DateTime))
+				continue
+			}
 			switch message.Type {
+			/**
+			{
+				"type": "connect",
+				"created_time": 1784702839287,
+				"data": {
+					"id": "sharve",
+					"display_name": "夏午"
+				}
+			}
+			**/
 			case dto.CONNECT:
-				var id dto.ConnectMessage
-				if err := json.Unmarshal(message.Data, &id); err != nil {
+				var req dto.ConnectMessageRequest
+				if err := json.Unmarshal(message.Data, &req); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
 					continue
 				}
-				c.Id = id
+				// TODO password, current: id as password
+				c.Id = req.Id
+				c.DisplayName = req.DisplayName
 				s.registered.Set(c.Id, c)
+				message.Data = []byte(dto.SUCCESS)
+				mess, _ := json.Marshal(message)
+				c.Send(mess)
+				slog.Info("registered", "id", c.Id, "remote address", c.Conn.RemoteAddr().String())
 			case dto.CANDIDATE:
 				var candidateMess dto.CandidateMessage
 				if err := json.Unmarshal(message.Data, &candidateMess); err != nil {
@@ -111,22 +139,36 @@ func (s *Server) Handle(c *Client) error {
 					slog.Error("remote id not found", "remote id", candidateMess.RemoteId)
 					continue
 				}
+				candidateMess.RemoteId = c.Id
 				data, _ := json.Marshal(candidateMess)
 				message.Data = data
 				mess, _ := json.Marshal(message)
 				rc.Send(mess)
+			/**
+			{
+				"type": "chat",
+				"created_time": 1784702839287,
+				"data": {
+					"remote_id": "commie",
+					"message_chain": [
+						{ "type": "text", "message": "hello commie" },
+						{ "type": "call", "message": "hello call" },
+						{ "type": "answer", "message": "hello answer" },
+						{ "type": "establish", "message": "hello establish" }
+					]
+				}
+			}
+			**/
 			case dto.CHAT:
-				var chatMess dto.ChatMessage
+				slog.Debug("received chat message", "id", c.Id, "raw json", message.Data)
+				var chatMess dto.ChatMessageRequest
 				if err := json.Unmarshal(message.Data, &chatMess); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
 					continue
 				}
-				if _, ok := s.registered.Get(chatMess.LocalId); !ok {
-					s.registered.Set(c.Id, c)
-				}
 				rc, ok := s.registered.Get(chatMess.RemoteId)
 				if !ok {
-					slog.Error("remote id not found", "remote id", chatMess.RemoteId, "local id", chatMess.LocalId)
+					slog.Error("remote id not found", "remote id", chatMess.RemoteId, "local id", c.Id)
 					continue
 				}
 				for _, v := range chatMess.MessageChain {
@@ -135,10 +177,16 @@ func (s *Server) Handle(c *Client) error {
 						break BEGIN
 					}
 				}
-				data, _ := json.Marshal(chatMess)
+				var chatMessRsp = dto.ChatMessageResponse{
+					RemoteId:     c.Id,
+					DisplayName:  c.DisplayName,
+					MessageChain: chatMess.MessageChain,
+				}
+				data, _ := json.Marshal(chatMessRsp)
 				message.Data = data
 				mess, _ := json.Marshal(message)
 				rc.Send(mess)
+				slog.Debug("sent chat message", "id", c.Id, "raw json", mess)
 			}
 		}
 	}

@@ -2,7 +2,6 @@ package dto
 
 import (
 	"encoding/json"
-	"time"
 )
 
 type MessageType = string
@@ -13,10 +12,20 @@ const (
 	CANDIDATE MessageType = "candidate"
 )
 
-type ConnectMessage struct {
-	Id          string `json:"local_id"`
+type ConnectMessageRequest struct {
+	Id          string `json:"id"`
 	DisplayName string `json:"display_name"`
 }
+
+type ConnectStatus = string
+
+const (
+	SUCCESS       ConnectStatus = "success"
+	FAIL          ConnectStatus = "fail"
+	ALREADY_EXIST ConnectStatus = "already_exist"
+)
+
+type ConnectMessageResponse = ConnectStatus // status
 
 type CandidateMessage struct {
 	RemoteId      string `json:"sessionId"`
@@ -25,14 +34,20 @@ type CandidateMessage struct {
 	Sdp           string `json:"sdp"`
 }
 
-type ChatMessage struct {
-	LocalId      string        `json:"local_id"`
+type ChatMessageRequest struct {
 	RemoteId     string        `json:"remote_id"`
+	DisplayName  string        `json:"display_name"`
+	MessageChain []MessageUnit `json:"message_chain"`
+}
+
+type ChatMessageResponse struct {
+	RemoteId     string        `json:"remote_id"`
+	DisplayName  string        `json:"display_name"`
 	MessageChain []MessageUnit `json:"message_chain"`
 }
 
 type Message struct {
-	CreatedTime time.Time       `json:"created_time"`
+	CreatedTime int64           `json:"created_time"`
 	Type        string          `json:"type"`
 	Data        json.RawMessage `json:"data"`
 }
