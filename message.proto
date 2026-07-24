@@ -4,11 +4,22 @@ package message;
 
 option go_package = "dto/message";
 
-enum MessageType {
-  MESSAGE_TYPE_UNSPECIFIED = 0;
-  CONNECT                  = 1;
-  CHAT                     = 2;
-  CANDIDATE                = 3;
+// enum MessageType {
+//   MESSAGE_TYPE_UNSPECIFIED = 0;
+//   CONNECT                  = 1;
+//   CHAT                     = 2;
+//   CANDIDATE                = 3;
+// }
+
+message Message {
+  // MessageType type = 1;
+  int64 created_time = 2;
+  oneof data {
+    ConnectMessageRequest connect_message_request = 3;
+    ConnectMessageResponse connect_message_response = 4;
+    CandidateMessage candidate_message = 5;
+    ChatMessage chat_message = 6;
+  }
 }
 
 // 已有的消息与枚举

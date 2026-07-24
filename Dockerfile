@@ -20,6 +20,6 @@ FROM alpine:3.21 AS final
 COPY --from=builder /app/* /app/
 WORKDIR /app
 
-EXPOSE 8080
+EXPOSE 3001
 
 CMD [ "./app" ]

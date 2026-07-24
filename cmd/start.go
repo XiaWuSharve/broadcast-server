@@ -4,13 +4,10 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"context"
-	"fmt"
+	"errors"
+	"log/slog"
+	"net"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/XiaWuSharve/kcp-webrtc-server/server"
 	"github.com/spf13/cobra"
@@ -23,24 +20,28 @@ var startCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		s := server.New(1024, 1024)
-		fmt.Println("starting...")
-		httpServer := &http.Server{
-			Addr: "0.0.0.0:3001",
+		slog.Info("starting...")
+		listener, err := net.Listen("tcp", "0.0.0.0:3001")
+		if err != nil {
+			slog.Error("cannot create listener", "err", err)
+			// 处理错误...
 		}
-		s.Start(httpServer)
+		if err := s.Start(listener); !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("cannot serve", "err", err)
+		}
+		defer func() {
+			if err := listener.Close(); err != nil {
+				slog.Error("unable to close server", "err", err)
+			}
+		}()
 
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt)
-		signal.Notify(sig, syscall.SIGTERM)
-		<-sig
+		// sig := make(chan os.Signal, 1)
+		// signal.Notify(sig, os.Interrupt)
+		// signal.Notify(sig, syscall.SIGTERM)
+		// <-sig
 
-		fmt.Println("exiting...")
+		slog.Info("exiting...")
 		close(s.Cancel)
-		shutDownCtx, timeoutRelease := context.WithTimeout(context.Background(), 10*time.Second)
-		if err := httpServer.Shutdown(shutDownCtx); err != nil {
-			fmt.Printf("unable to close server: %s", err)
-		}
-		timeoutRelease()
 	},
 }
 

@@ -21,58 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type MessageType int32
-
-const (
-	MessageType_MESSAGE_TYPE_UNSPECIFIED MessageType = 0
-	MessageType_CONNECT                  MessageType = 1
-	MessageType_CHAT                     MessageType = 2
-	MessageType_CANDIDATE                MessageType = 3
-)
-
-// Enum value maps for MessageType.
-var (
-	MessageType_name = map[int32]string{
-		0: "MESSAGE_TYPE_UNSPECIFIED",
-		1: "CONNECT",
-		2: "CHAT",
-		3: "CANDIDATE",
-	}
-	MessageType_value = map[string]int32{
-		"MESSAGE_TYPE_UNSPECIFIED": 0,
-		"CONNECT":                  1,
-		"CHAT":                     2,
-		"CANDIDATE":                3,
-	}
-)
-
-func (x MessageType) Enum() *MessageType {
-	p := new(MessageType)
-	*p = x
-	return p
-}
-
-func (x MessageType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MessageType) Descriptor() protoreflect.EnumDescriptor {
-	return file_message_proto_enumTypes[0].Descriptor()
-}
-
-func (MessageType) Type() protoreflect.EnumType {
-	return &file_message_proto_enumTypes[0]
-}
-
-func (x MessageType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MessageType.Descriptor instead.
-func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{0}
-}
-
 type ConnectStatus int32
 
 const (
@@ -109,11 +57,11 @@ func (x ConnectStatus) String() string {
 }
 
 func (ConnectStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_message_proto_enumTypes[1].Descriptor()
+	return file_message_proto_enumTypes[0].Descriptor()
 }
 
 func (ConnectStatus) Type() protoreflect.EnumType {
-	return &file_message_proto_enumTypes[1]
+	return &file_message_proto_enumTypes[0]
 }
 
 func (x ConnectStatus) Number() protoreflect.EnumNumber {
@@ -122,7 +70,7 @@ func (x ConnectStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ConnectStatus.Descriptor instead.
 func (ConnectStatus) EnumDescriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_message_proto_rawDescGZIP(), []int{0}
 }
 
 // 从 Go 的 MessageUnitType 常量迁移来的枚举
@@ -165,11 +113,11 @@ func (x MessageUnitType) String() string {
 }
 
 func (MessageUnitType) Descriptor() protoreflect.EnumDescriptor {
-	return file_message_proto_enumTypes[2].Descriptor()
+	return file_message_proto_enumTypes[1].Descriptor()
 }
 
 func (MessageUnitType) Type() protoreflect.EnumType {
-	return &file_message_proto_enumTypes[2]
+	return &file_message_proto_enumTypes[1]
 }
 
 func (x MessageUnitType) Number() protoreflect.EnumNumber {
@@ -178,8 +126,131 @@ func (x MessageUnitType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MessageUnitType.Descriptor instead.
 func (MessageUnitType) EnumDescriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{2}
+	return file_message_proto_rawDescGZIP(), []int{1}
 }
+
+type Message struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// MessageType type = 1;
+	CreatedTime int64 `protobuf:"varint,2,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
+	// Types that are valid to be assigned to Data:
+	//
+	//	*Message_ConnectMessageRequest
+	//	*Message_ConnectMessageResponse
+	//	*Message_CandidateMessage
+	//	*Message_ChatMessage
+	Data          isMessage_Data `protobuf_oneof:"data"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Message) Reset() {
+	*x = Message{}
+	mi := &file_message_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Message) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Message) ProtoMessage() {}
+
+func (x *Message) ProtoReflect() protoreflect.Message {
+	mi := &file_message_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Message.ProtoReflect.Descriptor instead.
+func (*Message) Descriptor() ([]byte, []int) {
+	return file_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Message) GetCreatedTime() int64 {
+	if x != nil {
+		return x.CreatedTime
+	}
+	return 0
+}
+
+func (x *Message) GetData() isMessage_Data {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *Message) GetConnectMessageRequest() *ConnectMessageRequest {
+	if x != nil {
+		if x, ok := x.Data.(*Message_ConnectMessageRequest); ok {
+			return x.ConnectMessageRequest
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetConnectMessageResponse() *ConnectMessageResponse {
+	if x != nil {
+		if x, ok := x.Data.(*Message_ConnectMessageResponse); ok {
+			return x.ConnectMessageResponse
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetCandidateMessage() *CandidateMessage {
+	if x != nil {
+		if x, ok := x.Data.(*Message_CandidateMessage); ok {
+			return x.CandidateMessage
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetChatMessage() *ChatMessage {
+	if x != nil {
+		if x, ok := x.Data.(*Message_ChatMessage); ok {
+			return x.ChatMessage
+		}
+	}
+	return nil
+}
+
+type isMessage_Data interface {
+	isMessage_Data()
+}
+
+type Message_ConnectMessageRequest struct {
+	ConnectMessageRequest *ConnectMessageRequest `protobuf:"bytes,3,opt,name=connect_message_request,json=connectMessageRequest,proto3,oneof"`
+}
+
+type Message_ConnectMessageResponse struct {
+	ConnectMessageResponse *ConnectMessageResponse `protobuf:"bytes,4,opt,name=connect_message_response,json=connectMessageResponse,proto3,oneof"`
+}
+
+type Message_CandidateMessage struct {
+	CandidateMessage *CandidateMessage `protobuf:"bytes,5,opt,name=candidate_message,json=candidateMessage,proto3,oneof"`
+}
+
+type Message_ChatMessage struct {
+	ChatMessage *ChatMessage `protobuf:"bytes,6,opt,name=chat_message,json=chatMessage,proto3,oneof"`
+}
+
+func (*Message_ConnectMessageRequest) isMessage_Data() {}
+
+func (*Message_ConnectMessageResponse) isMessage_Data() {}
+
+func (*Message_CandidateMessage) isMessage_Data() {}
+
+func (*Message_ChatMessage) isMessage_Data() {}
 
 // 已有的消息与枚举
 type ConnectMessageRequest struct {
@@ -192,7 +263,7 @@ type ConnectMessageRequest struct {
 
 func (x *ConnectMessageRequest) Reset() {
 	*x = ConnectMessageRequest{}
-	mi := &file_message_proto_msgTypes[0]
+	mi := &file_message_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +275,7 @@ func (x *ConnectMessageRequest) String() string {
 func (*ConnectMessageRequest) ProtoMessage() {}
 
 func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[0]
+	mi := &file_message_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +288,7 @@ func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectMessageRequest.ProtoReflect.Descriptor instead.
 func (*ConnectMessageRequest) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{0}
+	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ConnectMessageRequest) GetId() string {
@@ -243,7 +314,7 @@ type ConnectMessageResponse struct {
 
 func (x *ConnectMessageResponse) Reset() {
 	*x = ConnectMessageResponse{}
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +326,7 @@ func (x *ConnectMessageResponse) String() string {
 func (*ConnectMessageResponse) ProtoMessage() {}
 
 func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,7 +339,7 @@ func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectMessageResponse.ProtoReflect.Descriptor instead.
 func (*ConnectMessageResponse) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ConnectMessageResponse) GetStatus() ConnectStatus {
@@ -290,7 +361,7 @@ type CandidateMessage struct {
 
 func (x *CandidateMessage) Reset() {
 	*x = CandidateMessage{}
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -302,7 +373,7 @@ func (x *CandidateMessage) String() string {
 func (*CandidateMessage) ProtoMessage() {}
 
 func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -315,7 +386,7 @@ func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CandidateMessage.ProtoReflect.Descriptor instead.
 func (*CandidateMessage) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{2}
+	return file_message_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CandidateMessage) GetRemoteId() string {
@@ -358,7 +429,7 @@ type ChatMessage struct {
 
 func (x *ChatMessage) Reset() {
 	*x = ChatMessage{}
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -370,7 +441,7 @@ func (x *ChatMessage) String() string {
 func (*ChatMessage) ProtoMessage() {}
 
 func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -383,7 +454,7 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{3}
+	return file_message_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ChatMessage) GetRemoteId() string {
@@ -418,7 +489,7 @@ type MessageUnit struct {
 
 func (x *MessageUnit) Reset() {
 	*x = MessageUnit{}
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +501,7 @@ func (x *MessageUnit) String() string {
 func (*MessageUnit) ProtoMessage() {}
 
 func (x *MessageUnit) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +514,7 @@ func (x *MessageUnit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageUnit.ProtoReflect.Descriptor instead.
 func (*MessageUnit) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{4}
+	return file_message_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *MessageUnit) GetType() MessageUnitType {
@@ -464,7 +535,14 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"J\n" +
+	"\rmessage.proto\x12\amessage\"\xf0\x02\n" +
+	"\aMessage\x12!\n" +
+	"\fcreated_time\x18\x02 \x01(\x03R\vcreatedTime\x12X\n" +
+	"\x17connect_message_request\x18\x03 \x01(\v2\x1e.message.ConnectMessageRequestH\x00R\x15connectMessageRequest\x12[\n" +
+	"\x18connect_message_response\x18\x04 \x01(\v2\x1f.message.ConnectMessageResponseH\x00R\x16connectMessageResponse\x12H\n" +
+	"\x11candidate_message\x18\x05 \x01(\v2\x19.message.CandidateMessageH\x00R\x10candidateMessage\x129\n" +
+	"\fchat_message\x18\x06 \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessageB\x06\n" +
+	"\x04data\"J\n" +
 	"\x15ConnectMessageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\"H\n" +
@@ -481,12 +559,7 @@ const file_message_proto_rawDesc = "" +
 	"\rmessage_chain\x18\x03 \x03(\v2\x14.message.MessageUnitR\fmessageChain\"U\n" +
 	"\vMessageUnit\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.message.MessageUnitTypeR\x04type\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage*Q\n" +
-	"\vMessageType\x12\x1c\n" +
-	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aCONNECT\x10\x01\x12\b\n" +
-	"\x04CHAT\x10\x02\x12\r\n" +
-	"\tCANDIDATE\x10\x03*Y\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage*Y\n" +
 	"\rConnectStatus\x12\x1e\n" +
 	"\x1aCONNECT_STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\x11\n" +
@@ -512,12 +585,12 @@ func file_message_proto_rawDescGZIP() []byte {
 	return file_message_proto_rawDescData
 }
 
-var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_message_proto_goTypes = []any{
-	(MessageType)(0),               // 0: message.MessageType
-	(ConnectStatus)(0),             // 1: message.ConnectStatus
-	(MessageUnitType)(0),           // 2: message.MessageUnitType
+	(ConnectStatus)(0),             // 0: message.ConnectStatus
+	(MessageUnitType)(0),           // 1: message.MessageUnitType
+	(*Message)(nil),                // 2: message.Message
 	(*ConnectMessageRequest)(nil),  // 3: message.ConnectMessageRequest
 	(*ConnectMessageResponse)(nil), // 4: message.ConnectMessageResponse
 	(*CandidateMessage)(nil),       // 5: message.CandidateMessage
@@ -525,14 +598,18 @@ var file_message_proto_goTypes = []any{
 	(*MessageUnit)(nil),            // 7: message.MessageUnit
 }
 var file_message_proto_depIdxs = []int32{
-	1, // 0: message.ConnectMessageResponse.status:type_name -> message.ConnectStatus
-	7, // 1: message.ChatMessage.message_chain:type_name -> message.MessageUnit
-	2, // 2: message.MessageUnit.type:type_name -> message.MessageUnitType
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3, // 0: message.Message.connect_message_request:type_name -> message.ConnectMessageRequest
+	4, // 1: message.Message.connect_message_response:type_name -> message.ConnectMessageResponse
+	5, // 2: message.Message.candidate_message:type_name -> message.CandidateMessage
+	6, // 3: message.Message.chat_message:type_name -> message.ChatMessage
+	0, // 4: message.ConnectMessageResponse.status:type_name -> message.ConnectStatus
+	7, // 5: message.ChatMessage.message_chain:type_name -> message.MessageUnit
+	1, // 6: message.MessageUnit.type:type_name -> message.MessageUnitType
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_message_proto_init() }
@@ -540,13 +617,19 @@ func file_message_proto_init() {
 	if File_message_proto != nil {
 		return
 	}
+	file_message_proto_msgTypes[0].OneofWrappers = []any{
+		(*Message_ConnectMessageRequest)(nil),
+		(*Message_ConnectMessageResponse)(nil),
+		(*Message_CandidateMessage)(nil),
+		(*Message_ChatMessage)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_message_proto_rawDesc), len(file_message_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   5,
+			NumEnums:      2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
