@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package message;
+
+option go_package = "dto/message";
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  CONNECT                  = 1;
+  CHAT                     = 2;
+  CANDIDATE                = 3;
+}
+
+// 已有的消息与枚举
+message ConnectMessageRequest {
+  string id           = 1;
+  string display_name = 2;
+}
+
+enum ConnectStatus {
+  CONNECT_STATUS_UNSPECIFIED = 0;
+  SUCCESS                    = 1;
+  ALREADY_EXIST              = 2;
+  FAIL                       = 3;
+}
+
+message ConnectMessageResponse {
+  ConnectStatus status = 1;
+}
+
+message CandidateMessage {
+  string remote_id       = 1;
+  string sdp_mid         = 2;
+  int32  sdp_mline_index = 3;
+  string sdp             = 4;
+}
+
+// 从 ChatMessage 迁移
+message ChatMessage {
+  string               remote_id     = 1;
+  string               display_name  = 2;
+  repeated MessageUnit message_chain = 3;
+}
+
+// 从 Go 的 MessageUnitType 常量迁移来的枚举
+enum MessageUnitType {
+  MESSAGE_UNIT_TYPE_UNSPECIFIED = 0;  // proto3 要求第一个值为 0
+  TEXT                          = 1;
+  CALL                          = 2;
+  ANSWER                        = 3;
+  ESTABLISH                     = 4;
+}
+
+// 从 MessageUnit 迁移
+message MessageUnit {
+  MessageUnitType type    = 1;
+  string          message = 2;
+}

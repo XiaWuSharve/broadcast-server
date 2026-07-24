@@ -6,7 +6,7 @@ package main
 import (
 	"log/slog"
 
-	"github.com/XiaWuSharve/broadcast-server/cmd"
+	"github.com/XiaWuSharve/kcp-webrtc-server/cmd"
 )
 
 func main() {

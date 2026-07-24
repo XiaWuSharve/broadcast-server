@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/XiaWuSharve/kcp-webrtc-server/dto"
 	"github.com/gorilla/websocket"
 )
 
@@ -10,8 +11,8 @@ type Client struct {
 	Conn        *websocket.Conn
 	Id          string
 	DisplayName string
-	WriteChan   chan []byte
-	ReadChan    chan []byte
+	WriteChan   chan dto.Message
+	ReadChan    chan dto.Message
 }
 
 func (c *Client) Receive() ([]byte, error) {

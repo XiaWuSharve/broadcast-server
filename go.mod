@@ -1,10 +1,22 @@
-module github.com/XiaWuSharve/broadcast-server
+module github.com/XiaWuSharve/kcp-webrtc-server
 
 go 1.25.3
 
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.10.1
+	github.com/xtaci/kcp-go/v5 v5.6.72
+	google.golang.org/protobuf v1.36.11
+)
+
+require (
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
+	github.com/klauspost/reedsolomon v1.12.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/tjfoc/gmsm v1.4.1 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 )
 
 require (

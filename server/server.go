@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/XiaWuSharve/broadcast-server/dto"
+	"github.com/XiaWuSharve/kcp-webrtc-server/dto"
 	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
 )
 
 type Server struct {
@@ -58,8 +59,8 @@ func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
 	c := &Client{
 		Conn:      conn,
 		Id:        "",
-		WriteChan: make(chan []byte),
-		ReadChan:  make(chan []byte),
+		WriteChan: make(chan dto.Message),
+		ReadChan:  make(chan dto.Message),
 	}
 	go func() {
 		if err := s.Handle(c); err != nil {
@@ -89,6 +90,8 @@ func (s *Server) Handle(c *Client) error {
 			return fmt.Errorf("canceled")
 		case data := <-c.ReadChan:
 			slog.Debug("received", "raw message", string(data))
+			// 改为读Header
+			// |Type 2B|CreatedTime 8B|Len 4B -> 1Unit = 1B|
 			var message dto.Message
 			if err := json.Unmarshal(data, &message); err != nil {
 				slog.Error("cannot parse", "err", err, "data", string(data))
@@ -115,9 +118,9 @@ func (s *Server) Handle(c *Client) error {
 				}
 			}
 			**/
-			case dto.CONNECT:
+			case dto.MessageType_CONNECT:
 				var req dto.ConnectMessageRequest
-				if err := json.Unmarshal(message.Data, &req); err != nil {
+				if err := proto.Unmarshal(data.Payload, &req); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
 					continue
 				}
@@ -125,13 +128,14 @@ func (s *Server) Handle(c *Client) error {
 				c.Id = req.Id
 				c.DisplayName = req.DisplayName
 				s.registered.Set(c.Id, c)
-				message.Data = []byte(dto.SUCCESS)
-				mess, _ := json.Marshal(message)
+				mess, _ := proto.Marshal(&dto.ConnectMessageResponse{
+					Status: dto.ConnectStatus_SUCCESS,
+				})
 				c.Send(mess)
 				slog.Info("registered", "id", c.Id, "remote address", c.Conn.RemoteAddr().String())
-			case dto.CANDIDATE:
+			case dto.MessageType_CANDIDATE:
 				var candidateMess dto.CandidateMessage
-				if err := json.Unmarshal(message.Data, &candidateMess); err != nil {
+				if err := proto.Unmarshal(message.Data, &candidateMess); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
 					continue
 				}
@@ -141,9 +145,7 @@ func (s *Server) Handle(c *Client) error {
 					continue
 				}
 				candidateMess.RemoteId = c.Id
-				data, _ := json.Marshal(candidateMess)
-				message.Data = data
-				mess, _ := json.Marshal(message)
+				mess, _ := proto.Marshal(&candidateMess)
 				rc.Send(mess)
 			/**
 			{
@@ -160,9 +162,9 @@ func (s *Server) Handle(c *Client) error {
 				}
 			}
 			**/
-			case dto.CHAT:
-				var chatMess dto.ChatMessageRequest
-				if err := json.Unmarshal(message.Data, &chatMess); err != nil {
+			case dto.MessageType_CHAT:
+				var chatMess dto.ChatMessage
+				if err := proto.Unmarshal(message.Data, &chatMess); err != nil {
 					slog.Error("cannot parse", "err", err, "data", string(data))
 					continue
 				}
@@ -172,19 +174,17 @@ func (s *Server) Handle(c *Client) error {
 					continue
 				}
 				for _, v := range chatMess.MessageChain {
-					if v.Type != dto.TEXT && v.Type != dto.CALL && v.Type != dto.ANSWER && v.Type != dto.ESTABLISH {
+					if v.Type != dto.MessageUnitType_TEXT &&
+						v.Type != dto.MessageUnitType_CALL &&
+						v.Type != dto.MessageUnitType_ANSWER &&
+						v.Type != dto.MessageUnitType_ESTABLISH {
 						slog.Error("ilegal message unit type", "got", v.Type)
 						break BEGIN
 					}
 				}
-				var chatMessRsp = dto.ChatMessageResponse{
-					RemoteId:     c.Id,
-					DisplayName:  c.DisplayName,
-					MessageChain: chatMess.MessageChain,
-				}
-				data, _ := json.Marshal(chatMessRsp)
-				message.Data = data
-				mess, _ := json.Marshal(message)
+				chatMess.RemoteId = c.Id
+				chatMess.DisplayName = c.DisplayName
+				mess, _ := proto.Marshal(&chatMess)
 				rc.Send(mess)
 				slog.Debug("sent chat message", "id", c.Id, "raw json", mess)
 			}

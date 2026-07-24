@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/XiaWuSharve/broadcast-server/server"
+	"github.com/XiaWuSharve/kcp-webrtc-server/server"
 	"github.com/spf13/cobra"
 )
 
