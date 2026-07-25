@@ -31,8 +31,12 @@ func New(rBufSize int, wBufSize int) *Server {
 func (s *Server) Start(listener net.Listener) error {
 	// 注册 WebSocket 路由
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		err := s.CreateConn(w, r)
+		conn, err := s.upgrader.Upgrade(w, r, nil)
 		if err != nil {
+			slog.Error("unable to upgrade the HTTP server connection to the WebSocket protocol", "err", err)
+			return
+		}
+		if err := s.CreateConn(conn); err != nil {
 			slog.Error("cannot create conn", "err", err)
 		}
 	})
@@ -49,14 +53,10 @@ func (s *Server) setUpgrader(rBufSize int, wBufSize int) {
 	}
 }
 
-func (s *Server) CreateConn(w http.ResponseWriter, r *http.Request) error {
-	conn, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return fmt.Errorf("server: unable to upgrade the HTTP server connection to the WebSocket protocol: %s", err)
-	}
+func (s *Server) CreateConn(session *websocket.Conn) error {
 
 	c := &Client{
-		Conn:      conn,
+		Conn:      session,
 		Id:        "",
 		WriteChan: make(chan []byte),
 		ReadChan:  make(chan []byte),

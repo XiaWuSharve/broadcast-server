@@ -1,7 +1,9 @@
 package kcpserver
 
 import (
+	"encoding/json"
 	"log"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -63,7 +65,7 @@ func TestKCP(t *testing.T) {
 		t.Error("failed")
 	}
 
-	payload, _ = proto.Marshal(&message.Message{
+	dto := &message.Message{
 		Data: &message.Message_ChatMessage{ChatMessage: &message.ChatMessage{
 			RemoteId: "sharve",
 			MessageChain: []*message.MessageUnit{
@@ -73,7 +75,10 @@ func TestKCP(t *testing.T) {
 				},
 			},
 		}},
-	})
+	}
+
+	payload, _ = proto.Marshal(dto)
+	jsonPayload, _ := json.Marshal(dto)
 
 	c.Send(&frame.Message{
 		CreatedTime: time.Now().UnixMilli(),
@@ -92,4 +97,6 @@ func TestKCP(t *testing.T) {
 	if m.GetChatMessage().GetDisplayName() != "夏午" || m.GetChatMessage().GetMessageChain()[0].Message != "hello kcp+protobuf" {
 		t.Errorf("failed received: %s %s", m.GetChatMessage().GetDisplayName(), m.GetChatMessage().GetMessageChain()[0].Message)
 	}
+
+	slog.Info("compression rate (byte)", "before", len(jsonPayload), "after", len(payload)+12)
 }
