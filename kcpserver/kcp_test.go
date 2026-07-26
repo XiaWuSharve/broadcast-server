@@ -65,6 +65,8 @@ func TestKCP(t *testing.T) {
 		t.Error("failed")
 	}
 
+	time.Sleep(time.Second)
+
 	dto := &message.Message{
 		Data: &message.Message_ChatMessage{ChatMessage: &message.ChatMessage{
 			RemoteId: "sharve",

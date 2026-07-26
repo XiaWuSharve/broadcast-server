@@ -62,6 +62,7 @@ func (c *Client) Receive() (*frame.Message, error) {
 func (c *Client) Send(mess *frame.Message) error {
 	binary.BigEndian.PutUint64(c.Wbuf[:8], uint64(mess.CreatedTime))
 	binary.BigEndian.PutUint32(c.Wbuf[8:], mess.Len)
+	slog.Debug("client sending kcp frame", "bytes", string(append(c.Wbuf[:], mess.Payload...)))
 	_, err := c.Conn.Write(append(c.Wbuf[:], mess.Payload...))
 	if err != nil {
 		return fmt.Errorf("failed to send message: %v", err)
