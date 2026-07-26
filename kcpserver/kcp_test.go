@@ -1,6 +1,7 @@
 package kcpserver
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"log/slog"
@@ -20,8 +21,10 @@ func TestKCP(t *testing.T) {
 	}
 
 	s := New()
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancelTimeout := context.WithTimeout(ctx, 3*time.Second)
 	go func() {
-		if err := s.Start(listener); err != listener.Close() {
+		if err := s.Start(ctx, listener); err != listener.Close() {
 			t.Log(err)
 		}
 		t.Log("shutdown")
@@ -47,7 +50,6 @@ func TestKCP(t *testing.T) {
 	})
 	c.Send(&frame.Message{
 		CreatedTime: time.Now().UnixMilli(),
-		Len:         uint32(len(payload)),
 		Payload:     payload,
 	})
 
@@ -84,7 +86,6 @@ func TestKCP(t *testing.T) {
 
 	c.Send(&frame.Message{
 		CreatedTime: time.Now().UnixMilli(),
-		Len:         uint32(len(payload)),
 		Payload:     payload,
 	})
 
@@ -101,4 +102,6 @@ func TestKCP(t *testing.T) {
 	}
 
 	slog.Info("compression rate (byte)", "before", len(jsonPayload), "after", len(payload)+12)
+	cancelTimeout()
+	cancel()
 }

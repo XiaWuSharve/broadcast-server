@@ -4,10 +4,13 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net"
-	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/XiaWuSharve/kcp-webrtc-server/kcpserver"
 	"github.com/XiaWuSharve/kcp-webrtc-server/server"
@@ -18,7 +21,7 @@ import (
 var protocol string
 
 type Server interface {
-	Start(net.Listener) error
+	Start(context.Context, net.Listener) error
 }
 
 // startCmd represents the start command
@@ -51,22 +54,18 @@ var startCmd = &cobra.Command{
 			return
 		}
 
-		if err := s.Start(listener); !errors.Is(err, http.ErrServerClosed) {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt)
+		signal.Notify(sig, syscall.SIGTERM)
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-sig
+			slog.Info("exiting...")
+			cancel()
+		}()
+		if err := s.Start(ctx, listener); !errors.Is(err, net.ErrClosed) {
 			slog.Error("cannot serve", "err", err)
 		}
-		defer func() {
-			if err := listener.Close(); err != nil {
-				slog.Error("unable to close server", "err", err)
-			}
-		}()
-
-		// sig := make(chan os.Signal, 1)
-		// signal.Notify(sig, os.Interrupt)
-		// signal.Notify(sig, syscall.SIGTERM)
-		// <-sig
-
-		slog.Info("exiting...")
-		// close(s.Cancel)
 	},
 }
 

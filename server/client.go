@@ -27,7 +27,7 @@ func (c *Client) HandleReceive() error {
 	for {
 		data, err := c.Receive()
 		if err != nil {
-			return fmt.Errorf("failed to handle receive: %v", err)
+			return fmt.Errorf("failed to handle receive: %w", err)
 		}
 		c.ReadChan <- data
 	}
@@ -36,7 +36,7 @@ func (c *Client) HandleReceive() error {
 func (c *Client) HandleSend() error {
 	for data := range c.WriteChan {
 		if err := c.Send(data); err != nil {
-			return fmt.Errorf("failed to handle Send: %v", err)
+			return fmt.Errorf("failed to handle Send: %w", err)
 		}
 	}
 	return nil

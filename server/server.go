@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
 	"net"
 	"net/http"
@@ -16,19 +16,17 @@ import (
 type Server struct {
 	upgrader   *websocket.Upgrader
 	registered *utils.ConcurrentMap[string, *Client]
-	Cancel     chan struct{}
 }
 
 func New(rBufSize int, wBufSize int) *Server {
 	server := &Server{
 		registered: utils.NewConcurrentMap[string, *Client](),
-		Cancel:     make(chan struct{}),
 	}
 	server.setUpgrader(rBufSize, wBufSize)
 	return server
 }
 
-func (s *Server) Start(listener net.Listener) error {
+func (s *Server) Start(ctx context.Context, listener net.Listener) error {
 	// 注册 WebSocket 路由
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := s.upgrader.Upgrade(w, r, nil)
@@ -84,10 +82,10 @@ func (s *Server) Handle(c *Client) error {
 	slog.Info("started to handle an anonymous client", "remote address", c.Conn.RemoteAddr().String())
 	for {
 	BEGIN:
-		select {
-		case <-s.Cancel:
-			return fmt.Errorf("canceled")
-		case data := <-c.ReadChan:
+		for data := range c.ReadChan {
+			// case <-s.:
+			// return fmt.Errorf("canceled")
+
 			slog.Debug("received", "raw message", string(data))
 			var m message.Message
 			if err := proto.Unmarshal(data, &m); err != nil {
