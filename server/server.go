@@ -121,9 +121,12 @@ func (s *Server) Handle(c *Client) error {
 				c.Id = connMess.GetId()
 				c.DisplayName = connMess.GetDisplayName()
 				s.registered.Set(c.Id, c)
-				mess, _ := proto.Marshal(&message.ConnectMessageResponse{
-					Status: message.ConnectStatus_SUCCESS,
-				})
+				m.Data = &message.Message_ConnectMessageResponse{
+					ConnectMessageResponse: &message.ConnectMessageResponse{
+						Status: message.ConnectStatus_SUCCESS,
+					},
+				}
+				mess, _ := proto.Marshal(&m)
 				c.WriteChan <- mess
 				slog.Info("registered", "id", c.Id, "remote address", c.Conn.RemoteAddr().String())
 			case *message.Message_CandidateMessage:
@@ -134,7 +137,7 @@ func (s *Server) Handle(c *Client) error {
 					continue
 				}
 				candiMess.RemoteId = c.Id
-				mess, _ := proto.Marshal(candiMess)
+				mess, _ := proto.Marshal(&m)
 				rc.WriteChan <- mess
 			/**
 			{
@@ -169,7 +172,7 @@ func (s *Server) Handle(c *Client) error {
 				}
 				chatMess.RemoteId = c.Id
 				chatMess.DisplayName = c.DisplayName
-				mess, _ := proto.Marshal(chatMess)
+				mess, _ := proto.Marshal(&m)
 				rc.WriteChan <- mess
 				slog.Debug("sent chat message", "id", c.Id, "raw json", mess)
 			}

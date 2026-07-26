@@ -20,7 +20,7 @@ func (c *Client) Receive() ([]byte, error) {
 }
 
 func (c *Client) Send(mess []byte) error {
-	return c.Conn.WriteMessage(websocket.TextMessage, []byte(mess))
+	return c.Conn.WriteMessage(websocket.BinaryMessage, []byte(mess))
 }
 
 func (c *Client) HandleReceive() error {
