@@ -165,6 +165,28 @@ BEGIN:
 			frame.Payload = mess
 			rc.WriteChan <- frame
 			slog.Debug("sent chat message", "id", c.Id, "raw json", mess)
+		case *message.Message_CallSdp:
+			sdpMess := m.GetCallSdp()
+			rc, ok := s.registered.Get(sdpMess.RemoteId)
+			if !ok {
+				slog.Error("remote id not found", "remote id", sdpMess.RemoteId, "local id", c.Id)
+				continue
+			}
+			sdpMess.RemoteId = c.Id
+			mess, _ := proto.Marshal(&m)
+			frame.Payload = mess
+			rc.WriteChan <- frame
+		case *message.Message_AnswerSdp:
+			sdpMess := m.GetAnswerSdp()
+			rc, ok := s.registered.Get(sdpMess.RemoteId)
+			if !ok {
+				slog.Error("remote id not found", "remote id", sdpMess.RemoteId, "local id", c.Id)
+				continue
+			}
+			sdpMess.RemoteId = c.Id
+			mess, _ := proto.Marshal(&m)
+			frame.Payload = mess
+			rc.WriteChan <- frame
 		}
 	}
 	return nil

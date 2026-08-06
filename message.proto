@@ -23,7 +23,14 @@ message Message {
     ConnectMessageResponse connect_message_response = 4;
     CandidateMessage candidate_message = 5;
     ChatMessage chat_message = 6;
+    SdpMessage call_sdp = 7;
+    SdpMessage answer_sdp = 8;
   }
+}
+
+message SdpMessage {
+  string remote_id = 1;
+  string sdp = 2;
 }
 
 // 已有的消息与枚举

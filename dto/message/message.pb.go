@@ -139,6 +139,8 @@ type Message struct {
 	//	*Message_ConnectMessageResponse
 	//	*Message_CandidateMessage
 	//	*Message_ChatMessage
+	//	*Message_CallSdp
+	//	*Message_AnswerSdp
 	Data          isMessage_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -224,6 +226,24 @@ func (x *Message) GetChatMessage() *ChatMessage {
 	return nil
 }
 
+func (x *Message) GetCallSdp() *SdpMessage {
+	if x != nil {
+		if x, ok := x.Data.(*Message_CallSdp); ok {
+			return x.CallSdp
+		}
+	}
+	return nil
+}
+
+func (x *Message) GetAnswerSdp() *SdpMessage {
+	if x != nil {
+		if x, ok := x.Data.(*Message_AnswerSdp); ok {
+			return x.AnswerSdp
+		}
+	}
+	return nil
+}
+
 type isMessage_Data interface {
 	isMessage_Data()
 }
@@ -244,6 +264,14 @@ type Message_ChatMessage struct {
 	ChatMessage *ChatMessage `protobuf:"bytes,6,opt,name=chat_message,json=chatMessage,proto3,oneof"`
 }
 
+type Message_CallSdp struct {
+	CallSdp *SdpMessage `protobuf:"bytes,7,opt,name=call_sdp,json=callSdp,proto3,oneof"`
+}
+
+type Message_AnswerSdp struct {
+	AnswerSdp *SdpMessage `protobuf:"bytes,8,opt,name=answer_sdp,json=answerSdp,proto3,oneof"`
+}
+
 func (*Message_ConnectMessageRequest) isMessage_Data() {}
 
 func (*Message_ConnectMessageResponse) isMessage_Data() {}
@@ -251,6 +279,62 @@ func (*Message_ConnectMessageResponse) isMessage_Data() {}
 func (*Message_CandidateMessage) isMessage_Data() {}
 
 func (*Message_ChatMessage) isMessage_Data() {}
+
+func (*Message_CallSdp) isMessage_Data() {}
+
+func (*Message_AnswerSdp) isMessage_Data() {}
+
+type SdpMessage struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RemoteId      string                 `protobuf:"bytes,1,opt,name=remote_id,json=remoteId,proto3" json:"remote_id,omitempty"`
+	Sdp           string                 `protobuf:"bytes,2,opt,name=sdp,proto3" json:"sdp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SdpMessage) Reset() {
+	*x = SdpMessage{}
+	mi := &file_message_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SdpMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SdpMessage) ProtoMessage() {}
+
+func (x *SdpMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_message_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SdpMessage.ProtoReflect.Descriptor instead.
+func (*SdpMessage) Descriptor() ([]byte, []int) {
+	return file_message_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SdpMessage) GetRemoteId() string {
+	if x != nil {
+		return x.RemoteId
+	}
+	return ""
+}
+
+func (x *SdpMessage) GetSdp() string {
+	if x != nil {
+		return x.Sdp
+	}
+	return ""
+}
 
 // 已有的消息与枚举
 type ConnectMessageRequest struct {
@@ -263,7 +347,7 @@ type ConnectMessageRequest struct {
 
 func (x *ConnectMessageRequest) Reset() {
 	*x = ConnectMessageRequest{}
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -275,7 +359,7 @@ func (x *ConnectMessageRequest) String() string {
 func (*ConnectMessageRequest) ProtoMessage() {}
 
 func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -288,7 +372,7 @@ func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectMessageRequest.ProtoReflect.Descriptor instead.
 func (*ConnectMessageRequest) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ConnectMessageRequest) GetId() string {
@@ -314,7 +398,7 @@ type ConnectMessageResponse struct {
 
 func (x *ConnectMessageResponse) Reset() {
 	*x = ConnectMessageResponse{}
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +410,7 @@ func (x *ConnectMessageResponse) String() string {
 func (*ConnectMessageResponse) ProtoMessage() {}
 
 func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[2]
+	mi := &file_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +423,7 @@ func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectMessageResponse.ProtoReflect.Descriptor instead.
 func (*ConnectMessageResponse) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{2}
+	return file_message_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ConnectMessageResponse) GetStatus() ConnectStatus {
@@ -361,7 +445,7 @@ type CandidateMessage struct {
 
 func (x *CandidateMessage) Reset() {
 	*x = CandidateMessage{}
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -373,7 +457,7 @@ func (x *CandidateMessage) String() string {
 func (*CandidateMessage) ProtoMessage() {}
 
 func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[3]
+	mi := &file_message_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -386,7 +470,7 @@ func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CandidateMessage.ProtoReflect.Descriptor instead.
 func (*CandidateMessage) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{3}
+	return file_message_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CandidateMessage) GetRemoteId() string {
@@ -429,7 +513,7 @@ type ChatMessage struct {
 
 func (x *ChatMessage) Reset() {
 	*x = ChatMessage{}
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -441,7 +525,7 @@ func (x *ChatMessage) String() string {
 func (*ChatMessage) ProtoMessage() {}
 
 func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[4]
+	mi := &file_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +538,7 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{4}
+	return file_message_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ChatMessage) GetRemoteId() string {
@@ -489,7 +573,7 @@ type MessageUnit struct {
 
 func (x *MessageUnit) Reset() {
 	*x = MessageUnit{}
-	mi := &file_message_proto_msgTypes[5]
+	mi := &file_message_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -501,7 +585,7 @@ func (x *MessageUnit) String() string {
 func (*MessageUnit) ProtoMessage() {}
 
 func (x *MessageUnit) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[5]
+	mi := &file_message_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -514,7 +598,7 @@ func (x *MessageUnit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageUnit.ProtoReflect.Descriptor instead.
 func (*MessageUnit) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{5}
+	return file_message_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *MessageUnit) GetType() MessageUnitType {
@@ -535,14 +619,21 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\xf0\x02\n" +
+	"\rmessage.proto\x12\amessage\"\xd8\x03\n" +
 	"\aMessage\x12!\n" +
 	"\fcreated_time\x18\x02 \x01(\x03R\vcreatedTime\x12X\n" +
 	"\x17connect_message_request\x18\x03 \x01(\v2\x1e.message.ConnectMessageRequestH\x00R\x15connectMessageRequest\x12[\n" +
 	"\x18connect_message_response\x18\x04 \x01(\v2\x1f.message.ConnectMessageResponseH\x00R\x16connectMessageResponse\x12H\n" +
 	"\x11candidate_message\x18\x05 \x01(\v2\x19.message.CandidateMessageH\x00R\x10candidateMessage\x129\n" +
-	"\fchat_message\x18\x06 \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessageB\x06\n" +
-	"\x04data\"J\n" +
+	"\fchat_message\x18\x06 \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessage\x120\n" +
+	"\bcall_sdp\x18\a \x01(\v2\x13.message.SdpMessageH\x00R\acallSdp\x124\n" +
+	"\n" +
+	"answer_sdp\x18\b \x01(\v2\x13.message.SdpMessageH\x00R\tanswerSdpB\x06\n" +
+	"\x04data\";\n" +
+	"\n" +
+	"SdpMessage\x12\x1b\n" +
+	"\tremote_id\x18\x01 \x01(\tR\bremoteId\x12\x10\n" +
+	"\x03sdp\x18\x02 \x01(\tR\x03sdp\"J\n" +
 	"\x15ConnectMessageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\"H\n" +
@@ -571,7 +662,8 @@ const file_message_proto_rawDesc = "" +
 	"\x04CALL\x10\x02\x12\n" +
 	"\n" +
 	"\x06ANSWER\x10\x03\x12\r\n" +
-	"\tESTABLISH\x10\x04B\rZ\vdto/messageb\x06proto3"
+	"\tESTABLISH\x10\x04B.\n" +
+	"\x1dcom.github.xiawusharve.webrtcH\x03Z\vdto/messageb\x06proto3"
 
 var (
 	file_message_proto_rawDescOnce sync.Once
@@ -586,30 +678,33 @@ func file_message_proto_rawDescGZIP() []byte {
 }
 
 var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_message_proto_goTypes = []any{
 	(ConnectStatus)(0),             // 0: message.ConnectStatus
 	(MessageUnitType)(0),           // 1: message.MessageUnitType
 	(*Message)(nil),                // 2: message.Message
-	(*ConnectMessageRequest)(nil),  // 3: message.ConnectMessageRequest
-	(*ConnectMessageResponse)(nil), // 4: message.ConnectMessageResponse
-	(*CandidateMessage)(nil),       // 5: message.CandidateMessage
-	(*ChatMessage)(nil),            // 6: message.ChatMessage
-	(*MessageUnit)(nil),            // 7: message.MessageUnit
+	(*SdpMessage)(nil),             // 3: message.SdpMessage
+	(*ConnectMessageRequest)(nil),  // 4: message.ConnectMessageRequest
+	(*ConnectMessageResponse)(nil), // 5: message.ConnectMessageResponse
+	(*CandidateMessage)(nil),       // 6: message.CandidateMessage
+	(*ChatMessage)(nil),            // 7: message.ChatMessage
+	(*MessageUnit)(nil),            // 8: message.MessageUnit
 }
 var file_message_proto_depIdxs = []int32{
-	3, // 0: message.Message.connect_message_request:type_name -> message.ConnectMessageRequest
-	4, // 1: message.Message.connect_message_response:type_name -> message.ConnectMessageResponse
-	5, // 2: message.Message.candidate_message:type_name -> message.CandidateMessage
-	6, // 3: message.Message.chat_message:type_name -> message.ChatMessage
-	0, // 4: message.ConnectMessageResponse.status:type_name -> message.ConnectStatus
-	7, // 5: message.ChatMessage.message_chain:type_name -> message.MessageUnit
-	1, // 6: message.MessageUnit.type:type_name -> message.MessageUnitType
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4, // 0: message.Message.connect_message_request:type_name -> message.ConnectMessageRequest
+	5, // 1: message.Message.connect_message_response:type_name -> message.ConnectMessageResponse
+	6, // 2: message.Message.candidate_message:type_name -> message.CandidateMessage
+	7, // 3: message.Message.chat_message:type_name -> message.ChatMessage
+	3, // 4: message.Message.call_sdp:type_name -> message.SdpMessage
+	3, // 5: message.Message.answer_sdp:type_name -> message.SdpMessage
+	0, // 6: message.ConnectMessageResponse.status:type_name -> message.ConnectStatus
+	8, // 7: message.ChatMessage.message_chain:type_name -> message.MessageUnit
+	1, // 8: message.MessageUnit.type:type_name -> message.MessageUnitType
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_message_proto_init() }
@@ -622,6 +717,8 @@ func file_message_proto_init() {
 		(*Message_ConnectMessageResponse)(nil),
 		(*Message_CandidateMessage)(nil),
 		(*Message_ChatMessage)(nil),
+		(*Message_CallSdp)(nil),
+		(*Message_AnswerSdp)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -629,7 +726,7 @@ func file_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_message_proto_rawDesc), len(file_message_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

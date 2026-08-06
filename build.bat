@@ -1,1 +1,4 @@
-$env:GOOS="linux"; $env:GOARCH="amd64"; go build -o .
+@echo off
+set GOOS=linux
+set GOARCH=amd64
+go build -o .
