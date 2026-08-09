@@ -1,58 +1,47 @@
-package kcpserver
+package server
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"sync"
 
+	"github.com/XiaWuSharve/kcp-webrtc-server/client"
 	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
 	"github.com/XiaWuSharve/kcp-webrtc-server/utils"
-	"github.com/cespare/xxhash"
-	"google.golang.org/protobuf/proto"
 )
 
-type Server struct {
-	registered *utils.ShardMap[string, *Client]
+type Server[M any] interface {
+	Listen(ctx context.Context, listener net.Listener) error
+	TransformRequest(data *M) (int64, *message.Message, error)
+	TransformResponse(createdTime int64, mess *message.Message) *M
+}
+
+type ServerBase[ConnType any, MessType any] struct {
+	Server[MessType]
+	registered *utils.ShardMap[string, *client.Client[ConnType, MessType]]
 	wg         sync.WaitGroup
 }
 
-func New() *Server {
-	server := &Server{
-		// TODO config file
-		registered: utils.NewShardMap[string, *Client](128, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
-	}
-	return server
-}
-
-func (s *Server) Start(ctx context.Context, listener net.Listener) error {
+func (s *ServerBase[C, M]) Start(ctx context.Context, listener net.Listener) error {
 	slog.Info("server started", "addr", listener.Addr().String())
 	go func() {
 		<-ctx.Done()
 		s.wg.Wait()
 		listener.Close()
 	}()
-	for {
-		session, err := listener.Accept()
-		if err != nil {
-			if errors.Is(err, io.ErrClosedPipe) {
-				return net.ErrClosed
-			}
-			return fmt.Errorf("listener cannot accept kcp: %w", err)
+	if err := s.Listen(ctx, listener); err != nil {
+		if errors.Is(err, net.ErrClosed) {
+			return err
 		}
-		s.wg.Go(func() {
-			<-ctx.Done()
-			listener.Close()
-		})
-		s.CreateConn(ctx, session)
+		return fmt.Errorf("failed to listen: %w", err)
 	}
+	return nil
 }
 
-func (s *Server) CreateConn(ctx context.Context, session net.Conn) {
-	c := NewClient(session)
+func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client[C, M]) {
 
 	s.wg.Go(func() {
 		if err := s.Handle(ctx, c); err != nil {
@@ -82,13 +71,15 @@ func (s *Server) CreateConn(ctx context.Context, session net.Conn) {
 }
 
 // TODO 业务解耦
-func (s *Server) Handle(ctx context.Context, c *Client) error {
-	slog.Info("started to handle an anonymous client", "remote address", c.Conn.RemoteAddr().String())
+func (s *ServerBase[C, M]) Handle(ctx context.Context, c *client.Client[C, M]) error {
+	slog.Info("started to handle an anonymous client")
 BEGIN:
+	// TODO 能否每个data都启动一个goroutine？
 	for frame := range c.ReadChan {
-		var m message.Message
-		if err := proto.Unmarshal(frame.Payload, &m); err != nil {
-			slog.Error("cannot parse", "err", err)
+		slog.Debug("received raw message")
+		createdTime, m, err := s.TransformRequest(frame)
+		if err != nil {
+			slog.Error("cannot TransformData", "err", err)
 			continue
 		}
 		switch m.GetData().(type) {
@@ -113,10 +104,8 @@ BEGIN:
 					Status: message.ConnectStatus_SUCCESS,
 				},
 			}
-			mess, _ := proto.Marshal(&m)
-			frame.Payload = mess
-			c.WriteChan <- frame
-			slog.Info("registered", "id", c.Id, "remote address", c.Conn.RemoteAddr().String())
+			c.WriteChan <- s.TransformResponse(createdTime, m)
+			slog.Info("registered", "id", c.Id, "remote address", c.Conn)
 		case *message.Message_CandidateMessage:
 			candiMess := m.GetCandidateMessage()
 			rc, ok := s.registered.Get(candiMess.GetRemoteId())
@@ -125,9 +114,7 @@ BEGIN:
 				continue
 			}
 			candiMess.RemoteId = c.Id
-			mess, _ := proto.Marshal(&m)
-			frame.Payload = mess
-			rc.WriteChan <- frame
+			rc.WriteChan <- s.TransformResponse(createdTime, m)
 		/**
 		{
 			"type": "chat",
@@ -161,10 +148,8 @@ BEGIN:
 			}
 			chatMess.RemoteId = c.Id
 			chatMess.DisplayName = c.DisplayName
-			mess, _ := proto.Marshal(&m)
-			frame.Payload = mess
-			rc.WriteChan <- frame
-			slog.Debug("sent chat message", "id", c.Id, "raw json", mess)
+			rc.WriteChan <- s.TransformResponse(createdTime, m)
+			slog.Debug("sent chat message", "id", c.Id, "raw json", m)
 		case *message.Message_CallSdp:
 			sdpMess := m.GetCallSdp()
 			rc, ok := s.registered.Get(sdpMess.RemoteId)
@@ -173,9 +158,7 @@ BEGIN:
 				continue
 			}
 			sdpMess.RemoteId = c.Id
-			mess, _ := proto.Marshal(&m)
-			frame.Payload = mess
-			rc.WriteChan <- frame
+			rc.WriteChan <- s.TransformResponse(createdTime, m)
 		case *message.Message_AnswerSdp:
 			sdpMess := m.GetAnswerSdp()
 			rc, ok := s.registered.Get(sdpMess.RemoteId)
@@ -184,9 +167,7 @@ BEGIN:
 				continue
 			}
 			sdpMess.RemoteId = c.Id
-			mess, _ := proto.Marshal(&m)
-			frame.Payload = mess
-			rc.WriteChan <- frame
+			rc.WriteChan <- s.TransformResponse(createdTime, m)
 		}
 	}
 	return nil

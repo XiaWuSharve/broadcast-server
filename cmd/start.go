@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/kcpserver"
 	"github.com/XiaWuSharve/kcp-webrtc-server/server"
 	"github.com/spf13/cobra"
 	"github.com/xtaci/kcp-go/v5"
@@ -41,14 +40,14 @@ var startCmd = &cobra.Command{
 				slog.Error("cannot create listener", "err", err)
 				// 处理错误...
 			}
-			s = kcpserver.New()
+			s = server.NewKcpServer()
 		case "websocket":
 			listener, err = net.Listen("tcp", "0.0.0.0:3001")
 			if err != nil {
 				slog.Error("cannot create listener", "err", err)
 				// 处理错误...
 			}
-			s = server.New(1024, 1024)
+			s = server.NewWebSocketServer(1024, 1024)
 		default:
 			slog.Error("protocol param cannot be", "value", protocol)
 			return
