@@ -63,11 +63,13 @@ func (c *KcpClient) Send(mess *frame.Message) error {
 }
 
 func NewKcpClient(session net.Conn) *KcpClient {
-	return &KcpClient{
+	c := &KcpClient{
 		Client: Client[net.Conn, frame.Message]{
 			Conn:      session,
 			WriteChan: make(chan *frame.Message),
 			ReadChan:  make(chan *frame.Message),
 		},
 	}
+	c.ClientIO = c
+	return c
 }

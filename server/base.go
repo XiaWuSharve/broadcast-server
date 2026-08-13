@@ -105,7 +105,7 @@ BEGIN:
 				},
 			}
 			c.WriteChan <- s.TransformResponse(createdTime, m)
-			slog.Info("registered", "id", c.Id, "remote address", c.Conn)
+			slog.Info("registered", "id", c.Id)
 		case *message.Message_CandidateMessage:
 			candiMess := m.GetCandidateMessage()
 			rc, ok := s.registered.Get(candiMess.GetRemoteId())

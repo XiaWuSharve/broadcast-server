@@ -43,11 +43,13 @@ func (c *WebSocketClient) Send(mess *message.Message) error {
 }
 
 func NewWebSocketClient(session *websocket.Conn) *WebSocketClient {
-	return &WebSocketClient{
+	c := &WebSocketClient{
 		Client: Client[*websocket.Conn, message.Message]{
 			Conn:      session,
 			WriteChan: make(chan *message.Message),
 			ReadChan:  make(chan *message.Message),
 		},
 	}
+	c.ClientIO = c
+	return c
 }

@@ -28,6 +28,7 @@ func NewKcpServer() *KcpServer {
 			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.Message]](128, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 	}
+	server.Server = server
 	return server
 }
 
@@ -54,7 +55,7 @@ func (s *KcpServer) TransformRequest(data *frame.Message) (int64, *message.Messa
 	if err := proto.Unmarshal(data.Payload, &m); err != nil {
 		return 0, nil, fmt.Errorf("cannot parse data %s: %w", data.Payload, err)
 	}
-	return m.CreatedTime, &m, nil
+	return data.CreatedTime, &m, nil
 }
 
 func (s *KcpServer) TransformResponse(createdTime int64, mess *message.Message) *frame.Message {

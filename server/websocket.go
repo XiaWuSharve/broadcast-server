@@ -31,6 +31,7 @@ func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 			WriteBufferSize: wBufSize,
 		},
 	}
+	server.Server = server
 	return server
 }
 
