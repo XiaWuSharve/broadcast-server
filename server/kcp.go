@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/config"
 	"github.com/XiaWuSharve/whisperly/dto/frame"
 	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/XiaWuSharve/whisperly/utils"
@@ -26,7 +27,7 @@ func NewKcpServer() *KcpServer {
 	server := &KcpServer{
 		ServerBase: ServerBase[net.Conn, frame.Message]{
 			// TODO config file
-			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.Message]](128, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
+			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.Message]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 	}
 	server.DataTransformer = server

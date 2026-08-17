@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/config"
 	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/XiaWuSharve/whisperly/utils"
 	"github.com/cespare/xxhash"
@@ -25,7 +26,7 @@ func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 	server := &WebSocketServer{
 		ServerBase: ServerBase[*websocket.Conn, message.Message]{
 			// TODO config file
-			registered: utils.NewShardMap[string, *client.Client[*websocket.Conn, message.Message]](128, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
+			registered: utils.NewShardMap[string, *client.Client[*websocket.Conn, message.Message]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  rBufSize,
@@ -49,8 +50,6 @@ func (s *WebSocketServer) Listen(ctx context.Context, listener net.Listener) err
 		s.CreateConn(ctx, &c.Client)
 	})
 
-	// 使用传入的 listener 启动服务
-	slog.Info("server started", "addr", listener.Addr().String())
 	return http.Serve(listener, nil)
 }
 

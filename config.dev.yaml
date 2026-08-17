@@ -1,0 +1,12 @@
+protocol: kcp
+host: 0.0.0.0
+port: 3002
+read-buffer-size: 1024
+write-buffer-size: 1024
+time-tolerance: 300 # seconds
+registry-max-bucket-num: 64
+nsqd-address: ["localhost:4150"]
+nsqlookupd-address: "localhost:4161"
+receiver-num: 10
+sender-num: 10
+processor-num: 3

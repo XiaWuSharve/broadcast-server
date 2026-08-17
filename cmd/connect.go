@@ -87,7 +87,7 @@ var connectCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(connectCmd)
+	// rootCmd.AddCommand(connectCmd)
 
 	// Here you will define your flags and configuration settings.
 

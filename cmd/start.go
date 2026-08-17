@@ -10,17 +10,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/XiaWuSharve/whisperly/config"
 	"github.com/XiaWuSharve/whisperly/server"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"github.com/xtaci/kcp-go/v5"
 )
-
-var protocol string
-var cfg = pflag.StringP("config", "c", "", "Configuration file.")
 
 // TODO Config file
 // startCmd represents the start command
@@ -28,35 +25,32 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start a broadcast server. ",
 	Long:  ``,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		config.Bind(cmd)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		pflag.Parse()
-		if *cfg != "" {
-			viper.SetConfigFile(*cfg)
-			viper.SetConfigType("yaml")
-		} else {
-			viper.AddConfigPath(".")             // 把当前目录加入到配置文件的搜索路径中
-			viper.AddConfigPath("$HOME/.webrtc") // 配置文件搜索路径，可以设置多个配置文件搜索路径
-			viper.SetConfigName("config")        // 配置文件名称（没有文件扩展名）
-		}
+		protocol := config.Cfg.Protocol
+		host := config.Cfg.Host
+		port := config.Cfg.Port
 		var s server.Server
 		var listener net.Listener
 		var err error
 		slog.Info("starting...", "protocol", protocol)
 		switch protocol {
 		case "kcp":
-			listener, err = kcp.Listen("0.0.0.0:3001")
+			listener, err = kcp.Listen(host + ":" + strconv.Itoa(port))
 			if err != nil {
 				slog.Error("cannot create listener", "err", err)
 				// 处理错误...
 			}
 			s = server.NewKcpServer()
 		case "websocket":
-			listener, err = net.Listen("tcp", "0.0.0.0:3001")
+			listener, err = net.Listen("tcp", host+":"+strconv.Itoa(port))
 			if err != nil {
 				slog.Error("cannot create listener", "err", err)
 				// 处理错误...
 			}
-			s = server.NewWebSocketServer(1024, 1024)
+			s = server.NewWebSocketServer(config.Cfg.ReadBufferSize, config.Cfg.WriteBufferSize)
 		default:
 			slog.Error("protocol param cannot be", "value", protocol)
 			return
@@ -81,7 +75,7 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 
 	// Here you will define your flags and configuration settings.
-
+	config.Init(startCmd)
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
@@ -89,12 +83,4 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	// 添加 --name flag
-	// &name: 将 flag 的值绑定到 name 变量
-	// "name": flag 的长名称 --name
-	// "n": flag 的短名称 -n
-	// "": flag 的默认值
-	// "Name to greet": flag 的帮助信息
-	startCmd.Flags().StringVarP(&protocol, "protocol", "p", "kcp", "protocol for the server (support: kcp, websocket)")
 }
