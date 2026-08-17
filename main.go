@@ -6,7 +6,7 @@ package main
 import (
 	"log/slog"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/cmd"
+	"github.com/XiaWuSharve/whisperly/cmd"
 )
 
 func main() {

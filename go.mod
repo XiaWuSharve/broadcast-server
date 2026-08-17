@@ -1,4 +1,4 @@
-module github.com/XiaWuSharve/kcp-webrtc-server
+module github.com/XiaWuSharve/whisperly
 
 go 1.25.3
 

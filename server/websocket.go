@@ -6,9 +6,9 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/client"
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
-	"github.com/XiaWuSharve/kcp-webrtc-server/utils"
+	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/dto/message"
+	"github.com/XiaWuSharve/whisperly/utils"
 	"github.com/cespare/xxhash"
 	"github.com/gorilla/websocket"
 )

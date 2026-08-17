@@ -3,7 +3,7 @@ package mq
 import (
 	"fmt"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
+	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/nsqio/go-nsq"
 	"google.golang.org/protobuf/proto"
 )

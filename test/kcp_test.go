@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/client"
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/frame"
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
-	"github.com/XiaWuSharve/kcp-webrtc-server/server"
+	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/dto/frame"
+	"github.com/XiaWuSharve/whisperly/dto/message"
+	"github.com/XiaWuSharve/whisperly/server"
 	"github.com/xtaci/kcp-go/v5"
 	"google.golang.org/protobuf/proto"
 )

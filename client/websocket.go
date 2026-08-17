@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
+	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 )

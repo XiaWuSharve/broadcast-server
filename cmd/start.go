@@ -12,7 +12,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/server"
+	"github.com/XiaWuSharve/whisperly/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

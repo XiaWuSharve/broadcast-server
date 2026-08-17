@@ -9,7 +9,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/XiaWuSharve/kcp-webrtc-server/dto/frame"
+	"github.com/XiaWuSharve/whisperly/dto/frame"
 )
 
 type KcpClient struct {
