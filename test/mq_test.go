@@ -1,18 +1,19 @@
-package mq
+package test
 
 import (
 	"log/slog"
 	"testing"
 
 	"github.com/XiaWuSharve/kcp-webrtc-server/dto/message"
+	"github.com/XiaWuSharve/kcp-webrtc-server/mq"
 )
 
 func TestMq(t *testing.T) {
-	inputMq, err := NewInputMq("localhost:4161")
+	inputMq, err := mq.NewInputMq()
 	if err != nil {
 		t.Fatal("cannot create input mq", err)
 	}
-	emit, closeProducer, err := inputMq.CreateProducer()
+	emit, closeProducer, err := inputMq.CreateProducer("localhost:4150")
 	if err != nil {
 		t.Fatal("failed to create Producer", err)
 	}
@@ -46,7 +47,7 @@ func TestMq(t *testing.T) {
 		close(doneChan)
 		return nil
 	}
-	closeConsumer, err := inputMq.CreateConsumer(handleFunc)
+	closeConsumer, err := inputMq.CreateConsumer("localhost:4161", handleFunc)
 	defer func() {
 		<-closeConsumer()
 		slog.Info("consumer closed")

@@ -18,7 +18,8 @@ type WebSocketServer struct {
 	upgrader *websocket.Upgrader
 }
 
-var _ Server[message.Message] = (*WebSocketServer)(nil)
+var _ DataTransformer[message.Message] = (*WebSocketServer)(nil)
+var _ Listener = (*WebSocketServer)(nil)
 
 func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 	server := &WebSocketServer{
@@ -31,7 +32,8 @@ func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 			WriteBufferSize: wBufSize,
 		},
 	}
-	server.Server = server
+	server.DataTransformer = server
+	server.Listener = server
 	return server
 }
 

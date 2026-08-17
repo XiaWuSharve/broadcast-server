@@ -19,7 +19,8 @@ type KcpServer struct {
 	ServerBase[net.Conn, frame.Message]
 }
 
-var _ Server[frame.Message] = (*KcpServer)(nil)
+var _ Listener = (*KcpServer)(nil)
+var _ DataTransformer[frame.Message] = (*KcpServer)(nil)
 
 func NewKcpServer() *KcpServer {
 	server := &KcpServer{
@@ -28,7 +29,8 @@ func NewKcpServer() *KcpServer {
 			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.Message]](128, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 	}
-	server.Server = server
+	server.DataTransformer = server
+	server.Listener = server
 	return server
 }
 

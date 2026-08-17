@@ -13,17 +13,27 @@ import (
 	"github.com/XiaWuSharve/kcp-webrtc-server/utils"
 )
 
-type Server[M any] interface {
+type Server interface {
+	Start(context.Context, net.Listener) error
+}
+
+type Listener interface {
 	Listen(ctx context.Context, listener net.Listener) error
+}
+
+type DataTransformer[M any] interface {
 	TransformRequest(data *M) (int64, *message.Message, error)
 	TransformResponse(createdTime int64, mess *message.Message) *M
 }
 
 type ServerBase[ConnType any, MessType any] struct {
-	Server[MessType]
+	Listener
+	DataTransformer[MessType]
 	registered *utils.ShardMap[string, *client.Client[ConnType, MessType]]
 	wg         sync.WaitGroup
 }
+
+var _ Server = (*ServerBase[struct{}, struct{}])(nil)
 
 func (s *ServerBase[C, M]) Start(ctx context.Context, listener net.Listener) error {
 	slog.Info("server started", "addr", listener.Addr().String())

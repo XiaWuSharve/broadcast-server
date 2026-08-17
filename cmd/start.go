@@ -14,22 +14,31 @@ import (
 
 	"github.com/XiaWuSharve/kcp-webrtc-server/server"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/xtaci/kcp-go/v5"
 )
 
 var protocol string
+var cfg = pflag.StringP("config", "c", "", "Configuration file.")
 
-type Server interface {
-	Start(context.Context, net.Listener) error
-}
-
+// TODO Config file
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start a broadcast server. ",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		var s Server
+		pflag.Parse()
+		if *cfg != "" {
+			viper.SetConfigFile(*cfg)
+			viper.SetConfigType("yaml")
+		} else {
+			viper.AddConfigPath(".")             // 把当前目录加入到配置文件的搜索路径中
+			viper.AddConfigPath("$HOME/.webrtc") // 配置文件搜索路径，可以设置多个配置文件搜索路径
+			viper.SetConfigName("config")        // 配置文件名称（没有文件扩展名）
+		}
+		var s server.Server
 		var listener net.Listener
 		var err error
 		slog.Info("starting...", "protocol", protocol)
