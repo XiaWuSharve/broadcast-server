@@ -132,7 +132,9 @@ func (MessageUnitType) EnumDescriptor() ([]byte, []int) {
 type Message struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// MessageType type = 1;
-	CreatedTime int64 `protobuf:"varint,2,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
+	SenderId    string `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
+	ReceiverId  string `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
+	CreatedTime int64  `protobuf:"varint,4,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
 	// Types that are valid to be assigned to Data:
 	//
 	//	*Message_ConnectMessageRequest
@@ -174,6 +176,20 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Message) GetSenderId() string {
+	if x != nil {
+		return x.SenderId
+	}
+	return ""
+}
+
+func (x *Message) GetReceiverId() string {
+	if x != nil {
+		return x.ReceiverId
+	}
+	return ""
 }
 
 func (x *Message) GetCreatedTime() int64 {
@@ -249,27 +265,27 @@ type isMessage_Data interface {
 }
 
 type Message_ConnectMessageRequest struct {
-	ConnectMessageRequest *ConnectMessageRequest `protobuf:"bytes,3,opt,name=connect_message_request,json=connectMessageRequest,proto3,oneof"`
+	ConnectMessageRequest *ConnectMessageRequest `protobuf:"bytes,5,opt,name=connect_message_request,json=connectMessageRequest,proto3,oneof"`
 }
 
 type Message_ConnectMessageResponse struct {
-	ConnectMessageResponse *ConnectMessageResponse `protobuf:"bytes,4,opt,name=connect_message_response,json=connectMessageResponse,proto3,oneof"`
+	ConnectMessageResponse *ConnectMessageResponse `protobuf:"bytes,6,opt,name=connect_message_response,json=connectMessageResponse,proto3,oneof"`
 }
 
 type Message_CandidateMessage struct {
-	CandidateMessage *CandidateMessage `protobuf:"bytes,5,opt,name=candidate_message,json=candidateMessage,proto3,oneof"`
+	CandidateMessage *CandidateMessage `protobuf:"bytes,7,opt,name=candidate_message,json=candidateMessage,proto3,oneof"`
 }
 
 type Message_ChatMessage struct {
-	ChatMessage *ChatMessage `protobuf:"bytes,6,opt,name=chat_message,json=chatMessage,proto3,oneof"`
+	ChatMessage *ChatMessage `protobuf:"bytes,8,opt,name=chat_message,json=chatMessage,proto3,oneof"`
 }
 
 type Message_CallSdp struct {
-	CallSdp *SdpMessage `protobuf:"bytes,7,opt,name=call_sdp,json=callSdp,proto3,oneof"`
+	CallSdp *SdpMessage `protobuf:"bytes,9,opt,name=call_sdp,json=callSdp,proto3,oneof"`
 }
 
 type Message_AnswerSdp struct {
-	AnswerSdp *SdpMessage `protobuf:"bytes,8,opt,name=answer_sdp,json=answerSdp,proto3,oneof"`
+	AnswerSdp *SdpMessage `protobuf:"bytes,10,opt,name=answer_sdp,json=answerSdp,proto3,oneof"`
 }
 
 func (*Message_ConnectMessageRequest) isMessage_Data() {}
@@ -286,7 +302,6 @@ func (*Message_AnswerSdp) isMessage_Data() {}
 
 type SdpMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RemoteId      string                 `protobuf:"bytes,1,opt,name=remote_id,json=remoteId,proto3" json:"remote_id,omitempty"`
 	Sdp           string                 `protobuf:"bytes,2,opt,name=sdp,proto3" json:"sdp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -322,13 +337,6 @@ func (*SdpMessage) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SdpMessage) GetRemoteId() string {
-	if x != nil {
-		return x.RemoteId
-	}
-	return ""
-}
-
 func (x *SdpMessage) GetSdp() string {
 	if x != nil {
 		return x.Sdp
@@ -339,8 +347,7 @@ func (x *SdpMessage) GetSdp() string {
 // 已有的消息与枚举
 type ConnectMessageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -373,13 +380,6 @@ func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ConnectMessageRequest.ProtoReflect.Descriptor instead.
 func (*ConnectMessageRequest) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *ConnectMessageRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
 }
 
 func (x *ConnectMessageRequest) GetDisplayName() string {
@@ -435,7 +435,6 @@ func (x *ConnectMessageResponse) GetStatus() ConnectStatus {
 
 type CandidateMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RemoteId      string                 `protobuf:"bytes,1,opt,name=remote_id,json=remoteId,proto3" json:"remote_id,omitempty"`
 	SdpMid        string                 `protobuf:"bytes,2,opt,name=sdp_mid,json=sdpMid,proto3" json:"sdp_mid,omitempty"`
 	SdpMlineIndex int32                  `protobuf:"varint,3,opt,name=sdp_mline_index,json=sdpMlineIndex,proto3" json:"sdp_mline_index,omitempty"`
 	Sdp           string                 `protobuf:"bytes,4,opt,name=sdp,proto3" json:"sdp,omitempty"`
@@ -473,13 +472,6 @@ func (*CandidateMessage) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CandidateMessage) GetRemoteId() string {
-	if x != nil {
-		return x.RemoteId
-	}
-	return ""
-}
-
 func (x *CandidateMessage) GetSdpMid() string {
 	if x != nil {
 		return x.SdpMid
@@ -504,7 +496,6 @@ func (x *CandidateMessage) GetSdp() string {
 // 从 ChatMessage 迁移
 type ChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RemoteId      string                 `protobuf:"bytes,1,opt,name=remote_id,json=remoteId,proto3" json:"remote_id,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	MessageChain  []*MessageUnit         `protobuf:"bytes,3,rep,name=message_chain,json=messageChain,proto3" json:"message_chain,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -539,13 +530,6 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ChatMessage) GetRemoteId() string {
-	if x != nil {
-		return x.RemoteId
-	}
-	return ""
 }
 
 func (x *ChatMessage) GetDisplayName() string {
@@ -619,33 +603,33 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\xd8\x03\n" +
-	"\aMessage\x12!\n" +
-	"\fcreated_time\x18\x02 \x01(\x03R\vcreatedTime\x12X\n" +
-	"\x17connect_message_request\x18\x03 \x01(\v2\x1e.message.ConnectMessageRequestH\x00R\x15connectMessageRequest\x12[\n" +
-	"\x18connect_message_response\x18\x04 \x01(\v2\x1f.message.ConnectMessageResponseH\x00R\x16connectMessageResponse\x12H\n" +
-	"\x11candidate_message\x18\x05 \x01(\v2\x19.message.CandidateMessageH\x00R\x10candidateMessage\x129\n" +
-	"\fchat_message\x18\x06 \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessage\x120\n" +
-	"\bcall_sdp\x18\a \x01(\v2\x13.message.SdpMessageH\x00R\acallSdp\x124\n" +
+	"\rmessage.proto\x12\amessage\"\x96\x04\n" +
+	"\aMessage\x12\x1b\n" +
+	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
+	"\vreceiver_id\x18\x03 \x01(\tR\n" +
+	"receiverId\x12!\n" +
+	"\fcreated_time\x18\x04 \x01(\x03R\vcreatedTime\x12X\n" +
+	"\x17connect_message_request\x18\x05 \x01(\v2\x1e.message.ConnectMessageRequestH\x00R\x15connectMessageRequest\x12[\n" +
+	"\x18connect_message_response\x18\x06 \x01(\v2\x1f.message.ConnectMessageResponseH\x00R\x16connectMessageResponse\x12H\n" +
+	"\x11candidate_message\x18\a \x01(\v2\x19.message.CandidateMessageH\x00R\x10candidateMessage\x129\n" +
+	"\fchat_message\x18\b \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessage\x120\n" +
+	"\bcall_sdp\x18\t \x01(\v2\x13.message.SdpMessageH\x00R\acallSdp\x124\n" +
 	"\n" +
-	"answer_sdp\x18\b \x01(\v2\x13.message.SdpMessageH\x00R\tanswerSdpB\x06\n" +
-	"\x04data\";\n" +
+	"answer_sdp\x18\n" +
+	" \x01(\v2\x13.message.SdpMessageH\x00R\tanswerSdpB\x06\n" +
+	"\x04data\"\x1e\n" +
 	"\n" +
-	"SdpMessage\x12\x1b\n" +
-	"\tremote_id\x18\x01 \x01(\tR\bremoteId\x12\x10\n" +
-	"\x03sdp\x18\x02 \x01(\tR\x03sdp\"J\n" +
-	"\x15ConnectMessageRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\"H\n" +
+	"SdpMessage\x12\x10\n" +
+	"\x03sdp\x18\x02 \x01(\tR\x03sdp\":\n" +
+	"\x15ConnectMessageRequest\x12!\n" +
+	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\"H\n" +
 	"\x16ConnectMessageResponse\x12.\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x16.message.ConnectStatusR\x06status\"\x82\x01\n" +
-	"\x10CandidateMessage\x12\x1b\n" +
-	"\tremote_id\x18\x01 \x01(\tR\bremoteId\x12\x17\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x16.message.ConnectStatusR\x06status\"e\n" +
+	"\x10CandidateMessage\x12\x17\n" +
 	"\asdp_mid\x18\x02 \x01(\tR\x06sdpMid\x12&\n" +
 	"\x0fsdp_mline_index\x18\x03 \x01(\x05R\rsdpMlineIndex\x12\x10\n" +
-	"\x03sdp\x18\x04 \x01(\tR\x03sdp\"\x88\x01\n" +
-	"\vChatMessage\x12\x1b\n" +
-	"\tremote_id\x18\x01 \x01(\tR\bremoteId\x12!\n" +
+	"\x03sdp\x18\x04 \x01(\tR\x03sdp\"k\n" +
+	"\vChatMessage\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x129\n" +
 	"\rmessage_chain\x18\x03 \x03(\v2\x14.message.MessageUnitR\fmessageChain\"U\n" +
 	"\vMessageUnit\x12,\n" +

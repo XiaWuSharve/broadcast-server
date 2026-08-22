@@ -8,109 +8,91 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Mq[MessType any] struct {
-	DataTransformer[MessType]
-	config *nsq.Config
-	Topic  string
+type MqBase[I, O any] struct {
+	DataTransformer[I, O]
+	config            *nsq.Config
+	Topic             string
+	NsqLookupdAddress string
 }
 
-type MqInterface[MessType any] interface {
-	// returns: emitFunc, closeFunc, error
-	CreateProducer(nsqdAddress string) (func(message MessType) (chan *nsq.ProducerTransaction, error), func(), error)
-	// returns: closeFunc, error
-	CreateConsumer(nsqLookupdAddress string, handler func(message MessType) error) (func() chan int, error)
+type Mq[I, O any] interface {
+	CreateProducer(nsqdAddress string) (*Producer[I], error)
+	CreateConsumer(nsqLookupdAddress string) (*Consumer[O], error)
 }
 
-type DataTransformer[MessType any] interface {
-	// subclass
-	TransformRequest(data MessType) []byte
-	TransformResponse(data []byte) MessType
+type DataTransformer[I, O any] interface {
+	TransformRequest(data I) ([]byte, error)
+	TransformResponse(data []byte) (O, error)
 }
 
-var _ MqInterface[struct{}] = (*Mq[struct{}])(nil)
+var _ Mq[struct{}, struct{}] = (*MqBase[struct{}, struct{}])(nil)
 
-func (mq *Mq[M]) CreateProducer(nsqdAddress string) (func(message M) (chan *nsq.ProducerTransaction, error), func(), error) {
+func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string) (*Producer[I], error) {
 	producer, err := nsq.NewProducer(nsqdAddress, mq.config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create producer: %w", err)
+		return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
-	enqueue := func(message M) (chan *nsq.ProducerTransaction, error) {
-		doneChan := make(chan *nsq.ProducerTransaction)
-		body := mq.TransformRequest(message)
-		err := producer.PublishAsync(mq.Topic, body, doneChan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to publish message %s: %w", mq.TransformRequest(message), err)
-		}
-		return doneChan, nil
-	}
-	close := func() {
-		// Gracefully stop the producer.
-		producer.Stop()
-	}
-	return enqueue, close, nil
+	return &Producer[I]{
+		Producer: producer,
+		Mq:       mq,
+	}, nil
 }
 
-func (mq *Mq[M]) CreateConsumer(nsqLookupdAddress string, handler func(message M) error) (func() chan int, error) {
+func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string) (*Consumer[O], error) {
 	consumer, err := nsq.NewConsumer(mq.Topic, "processor", mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
-
-	h := func(message *nsq.Message) error {
-		return handler(mq.TransformResponse(message.Body))
-	}
-	consumer.AddHandler(nsq.HandlerFunc(h))
-
-	// Use nsqlookupd to discover nsqd instances.
-	// See also ConnectToNSQD, ConnectToNSQDs, ConnectToNSQLookupds.
-	err = consumer.ConnectToNSQLookupd(nsqLookupdAddress)
-	if err != nil {
-		return nil, fmt.Errorf("consumer failed to connect to nsq lookup damon: %w", err)
-	}
-
-	stop := func() chan int {
-		consumer.Stop()
-		return consumer.StopChan
-	}
-	return stop, nil
+	return &Consumer[O]{
+		Consumer: consumer,
+		Mq:       mq,
+	}, nil
 }
 
-type MessageTransformer Mq[*message.Message]
+type ReceiverDataTransformer struct{}
 
-var _ DataTransformer[*message.Message] = (*MessageTransformer)(nil)
+var _ DataTransformer[[]byte, *message.Message] = (*ReceiverDataTransformer)(nil)
 
-func (s *MessageTransformer) TransformRequest(mess *message.Message) []byte {
-	if mess == nil {
-		return []byte{}
-	}
-	bytes, _ := proto.Marshal(mess)
-	return bytes
+func (s *ReceiverDataTransformer) TransformRequest(data []byte) ([]byte, error) {
+	return data, nil
 }
 
-func (s *MessageTransformer) TransformResponse(data []byte) *message.Message {
+func (s *ReceiverDataTransformer) TransformResponse(data []byte) (*message.Message, error) {
 	var m message.Message
-	if proto.Unmarshal(data, &m) != nil {
-		return nil
+	if err := proto.Unmarshal(data, &m); err != nil {
+		return nil, err
 	}
-	return &m
+	return &m, nil
 }
 
-type ByteTransformer Mq[[]byte]
+type SenderDataTransformer struct{}
 
-var _ DataTransformer[[]byte] = (*ByteTransformer)(nil)
+var _ DataTransformer[*message.Message, []byte] = (*SenderDataTransformer)(nil)
 
-func (s *ByteTransformer) TransformRequest(data []byte) []byte {
-	return data
+func (s *SenderDataTransformer) TransformRequest(data *message.Message) ([]byte, error) {
+	return proto.Marshal(data)
 }
 
-func (s *ByteTransformer) TransformResponse(data []byte) []byte {
-	return data
+func (s *SenderDataTransformer) TransformResponse(data []byte) ([]byte, error) {
+	return data, nil
 }
 
-func NewMq[MessType any](topic string, dataTransformer DataTransformer[MessType]) (*Mq[MessType], error) {
+type BatchFlushDataTransformer struct{}
+
+var _ DataTransformer[[]byte, []byte] = (*BatchFlushDataTransformer)(nil)
+
+func (s *BatchFlushDataTransformer) TransformRequest(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+func (s *BatchFlushDataTransformer) TransformResponse(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+func NewBaseMq[I, O any](topic string, dataTransformer DataTransformer[I, O]) (*MqBase[I, O], error) {
 	// Instantiate a consumer that will subscribe to the provided channel.
 	config := nsq.NewConfig()
-	im := &Mq[MessType]{
+	im := &MqBase[I, O]{
 		config: config,
 		Topic:  topic,
 	}
@@ -119,15 +101,19 @@ func NewMq[MessType any](topic string, dataTransformer DataTransformer[MessType]
 	return im, nil
 }
 
-var NewInputMq = func() (*Mq[*message.Message], error) {
-	mq, err := NewMq("input_message", &MessageTransformer{})
-	return mq, err
+type RecieveMq = MqBase[[]byte, *message.Message]
+type SendMq = MqBase[*message.Message, []byte]
+type BatchFlushMq = MqBase[[]byte, []byte]
+
+func NewRecieveMq() (*RecieveMq, error) {
+	mq, err := NewBaseMq("input_message", &ReceiverDataTransformer{})
+	return (*RecieveMq)(mq), err
 }
-var NewOutputMq = func() (*Mq[[]byte], error) {
-	outMq, err := NewMq("output_message", &ByteTransformer{})
-	return outMq, err
+func NewSendMq() (*SendMq, error) {
+	outMq, err := NewBaseMq("output_message", &SenderDataTransformer{})
+	return (*SendMq)(outMq), err
 }
-var NewBatchFlusherMq = func() (*Mq[[]byte], error) {
-	batchFlushMq, err := NewMq("message_persistence", &ByteTransformer{})
-	return batchFlushMq, err
+func NewBatchFlushMq() (*BatchFlushMq, error) {
+	batchFlushMq, err := NewBaseMq("message_persistence", &BatchFlushDataTransformer{})
+	return (*BatchFlushMq)(batchFlushMq), err
 }

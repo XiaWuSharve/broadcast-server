@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net"
 	"time"
+
+	"github.com/XiaWuSharve/whisperly/config"
+	"github.com/XiaWuSharve/whisperly/mq"
+	"github.com/XiaWuSharve/whisperly/utils"
 )
 
 type ClientIO[MessType any] interface {
@@ -20,17 +23,19 @@ type Client[ConnType any, MessageType any] struct {
 	Conn        ConnType
 	WriteChan   chan *MessageType
 	ReadChan    chan *MessageType
+	Registry    *Registry[ConnType, MessageType]
+	Producer    *mq.ReceiveProducer
 	ClientIO[MessageType]
 }
 
+type Registry[ConnType, MessType any] = utils.ShardMap[string, *Client[ConnType, MessType]]
+
 func ValidateTime(createdTime int64) bool {
-	now := time.Now().UnixMilli()
-	diff := createdTime - now
+	diff := createdTime - time.Now().UnixMilli()
 	if diff < 0 {
 		diff = -diff
 	}
-	if diff > 5*60*1000 { // 5分钟对应的毫秒数
-		slog.Error("client time too slow or fast", "client time", time.UnixMilli(createdTime).Format(time.DateTime))
+	if diff > config.Cfg.TimeTolerance*1000 { // 5分钟对应的毫秒数
 		return false
 	}
 	return true

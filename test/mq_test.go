@@ -9,7 +9,7 @@ import (
 )
 
 func TestMq(t *testing.T) {
-	inputMq, err := mq.NewInputMq()
+	inputMq, err := mq.NewRecieveMq()
 	if err != nil {
 		t.Fatal("cannot create input mq", err)
 	}

@@ -17,26 +17,26 @@ option optimize_for = LITE_RUNTIME;
 
 message Message {
   // MessageType type = 1;
-  int64 created_time = 2;
+  string sender_id = 2;
+  string receiver_id = 3;
+  int64 created_time = 4;
   oneof data {
-    ConnectMessageRequest connect_message_request = 3;
-    ConnectMessageResponse connect_message_response = 4;
-    CandidateMessage candidate_message = 5;
-    ChatMessage chat_message = 6;
-    SdpMessage call_sdp = 7;
-    SdpMessage answer_sdp = 8;
+    ConnectMessageRequest connect_message_request = 5;
+    ConnectMessageResponse connect_message_response = 6;
+    CandidateMessage candidate_message = 7;
+    ChatMessage chat_message = 8;
+    SdpMessage call_sdp = 9;
+    SdpMessage answer_sdp = 10;
   }
 }
 
 message SdpMessage {
-  string remote_id = 1;
   string sdp = 2;
 }
 
 // 已有的消息与枚举
 message ConnectMessageRequest {
-  string id           = 1;
-  string display_name = 2;
+  string display_name = 1;
 }
 
 enum ConnectStatus {
@@ -51,7 +51,6 @@ message ConnectMessageResponse {
 }
 
 message CandidateMessage {
-  string remote_id       = 1;
   string sdp_mid         = 2;
   int32  sdp_mline_index = 3;
   string sdp             = 4;
@@ -59,7 +58,6 @@ message CandidateMessage {
 
 // 从 ChatMessage 迁移
 message ChatMessage {
-  string               remote_id     = 1;
   string               display_name  = 2;
   repeated MessageUnit message_chain = 3;
 }

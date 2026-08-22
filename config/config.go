@@ -16,7 +16,7 @@ type Config struct {
 	Port                 int      `mapstructure:"port" yaml:"port"`
 	ReadBufferSize       int      `mapstructure:"read-buffer-size" yaml:"read-buffer-size"`
 	WriteBufferSize      int      `mapstructure:"write-buffer-size" yaml:"write-buffer-size"`
-	TimeTolerance        int      `mapstructure:"time-tolerance" yaml:"time-tolerance"`
+	TimeTolerance        int64    `mapstructure:"time-tolerance" yaml:"time-tolerance"`
 	RegistryMaxBucketNum uint64   `mapstructure:"registry-max-bucket-num" yaml:"registry-max-bucket-num"`
 	NsqdAddress          []string `mapstructure:"nsqd-address" yaml:"nsqd-address"`
 	NsqlookupdAddress    string   `mapstructure:"nsqlookupd-address" yaml:"nsqlookupd-address"`
@@ -48,7 +48,7 @@ func Init(cmd *cobra.Command) {
 	cmd.PersistentFlags().IntP("port", "p", Cfg.Port, "port to listen on")
 	cmd.PersistentFlags().Int("read-buffer-size", Cfg.ReadBufferSize, "read buffer size")
 	cmd.PersistentFlags().Int("write-buffer-size", Cfg.WriteBufferSize, "write buffer size")
-	cmd.PersistentFlags().Int("time-tolerance", Cfg.TimeTolerance, "time tolerance in seconds")
+	cmd.PersistentFlags().Int64("time-tolerance", Cfg.TimeTolerance, "time tolerance in seconds")
 	cmd.PersistentFlags().Uint64("registry-max-bucket-num", Cfg.RegistryMaxBucketNum, "registry max bucket num")
 	cmd.PersistentFlags().StringSlice("nsqd-address", Cfg.NsqdAddress, "nsqd address list")
 	cmd.PersistentFlags().String("nsqlookupd-address", Cfg.NsqlookupdAddress, "nsqlookupd address")
