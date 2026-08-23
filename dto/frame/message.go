@@ -1,6 +1,6 @@
 package frame
 
-type Message struct {
+type Frame struct {
 	CreatedTime int64
 	Payload     []byte
 }

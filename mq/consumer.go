@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"github.com/XiaWuSharve/whisperly/dto/message"
+	"github.com/XiaWuSharve/whisperly/utils"
 	"github.com/nsqio/go-nsq"
 )
 
 type Consumer[MessType any] struct {
+	parser   utils.Parser[MessType]
 	Consumer *nsq.Consumer
-	Mq       *MqBase[any, MessType]
+	Mq       Mq
 }
 
 type Handler[MessType any] interface {
@@ -18,7 +20,7 @@ type Handler[MessType any] interface {
 
 func (c *Consumer[M]) Start(handler Handler[M]) error {
 	h := func(message *nsq.Message) error {
-		data, err := c.Mq.TransformResponse(message.Body)
+		data, err := c.parser.Parse(message.Body)
 		if err != nil {
 			return err
 		}
@@ -28,7 +30,7 @@ func (c *Consumer[M]) Start(handler Handler[M]) error {
 
 	// Use nsqlookupd to discover nsqd instances.
 	// See also ConnectToNSQD, ConnectToNSQDs, ConnectToNSQLookupds.
-	err := c.Consumer.ConnectToNSQLookupd(c.Mq.NsqLookupdAddress)
+	err := c.Consumer.ConnectToNSQLookupd(c.Mq.GetNsqLookupdAddress())
 	if err != nil {
 		return fmt.Errorf("consumer failed to connect to nsq lookup damon: %w", err)
 	}
@@ -40,6 +42,9 @@ func (c *Consumer[MessType]) Stop() chan int {
 	return c.Consumer.StopChan
 }
 
-type ReceiveConsumer = Consumer[*message.Message]
-type SendConsumer = Consumer[[]byte]
-type BatchFlushConsumer = Consumer[[]byte]
+type ReceiveConsumer struct {
+	Consumer[*message.Message]
+}
+
+// type SendConsumer = Consumer[[]byte]
+// type BatchFlushConsumer = Consumer[[]byte]

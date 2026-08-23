@@ -3,23 +3,21 @@ package mq
 import (
 	"fmt"
 
-	"github.com/XiaWuSharve/whisperly/dto/message"
+	"github.com/XiaWuSharve/whisperly/dto/frame"
+	"github.com/XiaWuSharve/whisperly/utils"
 	"github.com/nsqio/go-nsq"
 )
 
 type Producer[MessType any] struct {
+	Byter    utils.Byter[MessType]
 	Producer *nsq.Producer
-	Mq       *MqBase[MessType, any]
+	Mq       Mq
 }
 
 func (p *Producer[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
 	doneChan := make(chan *nsq.ProducerTransaction)
-	body, err := p.Mq.TransformRequest(message)
-	if err != nil {
-		return nil, fmt.Errorf("cannot transform request: %w", err)
-	}
-	err = p.Producer.PublishAsync(p.Mq.Topic, body, doneChan)
-	if err != nil {
+	body := p.Byter.ToByte(message)
+	if err := p.Producer.PublishAsync(p.Mq.GetTopic(), body, doneChan); err != nil {
 		return nil, fmt.Errorf("failed to publish message: %w", err)
 	}
 	return doneChan, nil
@@ -30,6 +28,9 @@ func (p *Producer[MessType]) Close() {
 	p.Producer.Stop()
 }
 
-type ReceiveProducer = Producer[*message.Message]
-type SendProducer = Producer[*message.Message]
-type BatchFlushProducer = Producer[[]byte]
+type ReceiveProducer struct {
+	Producer[*frame.Frame]
+}
+
+// type SendProducer = Producer[*frame.Frame]
+// type BatchFlushProducer = Producer[[]byte]
