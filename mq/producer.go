@@ -4,17 +4,23 @@ import (
 	"fmt"
 
 	"github.com/XiaWuSharve/whisperly/dto/frame"
+	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/XiaWuSharve/whisperly/utils"
 	"github.com/nsqio/go-nsq"
 )
 
-type Producer[MessType any] struct {
-	Byter    utils.Byter[MessType]
+type Producer[MessType any] interface {
+	Enqueue(message MessType) (chan *nsq.ProducerTransaction, error)
+	Close()
+}
+
+type ProducerBase[MessType any] struct {
+	Byter    utils.Encoder[MessType]
 	Producer *nsq.Producer
 	Mq       Mq
 }
 
-func (p *Producer[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
+func (p *ProducerBase[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
 	doneChan := make(chan *nsq.ProducerTransaction)
 	body := p.Byter.ToByte(message)
 	if err := p.Producer.PublishAsync(p.Mq.GetTopic(), body, doneChan); err != nil {
@@ -23,14 +29,21 @@ func (p *Producer[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransa
 	return doneChan, nil
 }
 
-func (p *Producer[MessType]) Close() {
+func (p *ProducerBase[MessType]) Close() {
 	// Gracefully stop the producer.
 	p.Producer.Stop()
 }
 
 type ReceiveProducer struct {
-	Producer[*frame.Frame]
+	ProducerBase[*frame.ReceiveFrame]
 }
 
-// type SendProducer = Producer[*frame.Frame]
+var _ Producer[*frame.ReceiveFrame] = (*ReceiveProducer)(nil)
+
+type SendProducer struct {
+	ProducerBase[*message.Message]
+}
+
+var _ Producer[*message.Message] = (*SendProducer)(nil)
+
 // type BatchFlushProducer = Producer[[]byte]

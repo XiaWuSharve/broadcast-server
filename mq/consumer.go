@@ -9,7 +9,7 @@ import (
 )
 
 type Consumer[MessType any] struct {
-	parser   utils.Parser[MessType]
+	parser   utils.Decoder[MessType]
 	Consumer *nsq.Consumer
 	Mq       Mq
 }

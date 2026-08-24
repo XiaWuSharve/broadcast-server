@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/XiaWuSharve/whisperly/dto/frame"
+	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/nsqio/go-nsq"
 )
 
 type KcpClient struct {
-	Client[net.Conn, frame.Frame]
+	Client[net.Conn]
 	Rbuf        [12]byte
 	Wbuf        [12]byte
 	CreatedTime int64
@@ -23,10 +24,10 @@ type KcpClient struct {
 	Err         error
 }
 
-var _ ClientIO[frame.Frame] = (*KcpClient)(nil)
+var _ ClientIO[frame.ReceiveFrame] = (*KcpClient)(nil)
 
-func (c *KcpClient) Receive() (*frame.Frame, error) {
-	// |CreatedTime 8B|Len 4B -> 1Unit = 1B|
+func (c *KcpClient) Receive() (*frame.SendFrame, error) {
+	// TODO |AckType 1B|CreatedTime 8B|Len 4B -> 1Unit = 1B|
 	if _, c.Err = io.ReadFull(c.Conn, c.Rbuf[:]); c.Err != nil {
 		if errors.Is(c.Err, io.ErrClosedPipe) {
 			return nil, net.ErrClosed
@@ -37,7 +38,9 @@ func (c *KcpClient) Receive() (*frame.Frame, error) {
 	c.PayloadLen = int(binary.BigEndian.Uint32(c.Rbuf[8:12]))
 	slog.Debug("received", "header", c.Rbuf[:], "created time", time.UnixMilli(c.CreatedTime).String(), "payload length (Bytes)", c.PayloadLen)
 	if !ValidateTime(c.CreatedTime) {
-		c.Send()
+		c.Send(&frame.SendFrame{
+			Ack: message.AckStatus_FAIL,
+		})
 		io.CopyN(io.Discard, c.Conn, int64(c.PayloadLen))
 		return nil
 	}
@@ -49,7 +52,7 @@ func (c *KcpClient) Receive() (*frame.Frame, error) {
 		}
 		return fmt.Errorf("failed to read payload: %w", c.Err)
 	}
-	c.Transaction, c.Err = c.Producer.Enqueue(&frame.Frame{
+	c.Transaction, c.Err = c.Producer.Enqueue(&frame.ReceiveFrame{
 		CreatedTime: c.CreatedTime,
 		Payload:     payload,
 	})
@@ -59,7 +62,7 @@ func (c *KcpClient) Receive() (*frame.Frame, error) {
 	return nil
 }
 
-func (c *KcpClient) Send(mess *frame.Frame) error {
+func (c *KcpClient) Send(mess *frame.SendFrame) error {
 	binary.BigEndian.PutUint64(c.Wbuf[:8], uint64(mess.CreatedTime))
 	binary.BigEndian.PutUint32(c.Wbuf[8:], uint32(len(mess.Payload)))
 	slog.Debug("client sending kcp frame", "bytes", string(append(c.Wbuf[:], mess.Payload...)))
@@ -75,10 +78,10 @@ func (c *KcpClient) Send(mess *frame.Frame) error {
 
 func NewKcpClient(session net.Conn) *KcpClient {
 	c := &KcpClient{
-		Client: Client[net.Conn, frame.Frame]{
+		Client: Client[net.Conn, frame.ReceiveFrame]{
 			Conn:      session,
-			WriteChan: make(chan *frame.Frame),
-			ReadChan:  make(chan *frame.Frame),
+			WriteChan: make(chan *frame.ReceiveFrame),
+			ReadChan:  make(chan *frame.ReceiveFrame),
 		},
 	}
 	c.ClientIO = c

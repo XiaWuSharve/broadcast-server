@@ -21,55 +21,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ConnectStatus int32
+type AckStatus int32
 
 const (
-	ConnectStatus_CONNECT_STATUS_UNSPECIFIED ConnectStatus = 0
-	ConnectStatus_SUCCESS                    ConnectStatus = 1
-	ConnectStatus_ALREADY_EXIST              ConnectStatus = 2
-	ConnectStatus_FAIL                       ConnectStatus = 3
+	AckStatus_ACK_STATUS_UNSPECIFIED AckStatus = 0
+	AckStatus_SENDING                AckStatus = 4
+	AckStatus_SENT                   AckStatus = 5
+	AckStatus_FAIL                   AckStatus = 3
 )
 
-// Enum value maps for ConnectStatus.
+// Enum value maps for AckStatus.
 var (
-	ConnectStatus_name = map[int32]string{
-		0: "CONNECT_STATUS_UNSPECIFIED",
-		1: "SUCCESS",
-		2: "ALREADY_EXIST",
+	AckStatus_name = map[int32]string{
+		0: "ACK_STATUS_UNSPECIFIED",
+		4: "SENDING",
+		5: "SENT",
 		3: "FAIL",
 	}
-	ConnectStatus_value = map[string]int32{
-		"CONNECT_STATUS_UNSPECIFIED": 0,
-		"SUCCESS":                    1,
-		"ALREADY_EXIST":              2,
-		"FAIL":                       3,
+	AckStatus_value = map[string]int32{
+		"ACK_STATUS_UNSPECIFIED": 0,
+		"SENDING":                4,
+		"SENT":                   5,
+		"FAIL":                   3,
 	}
 )
 
-func (x ConnectStatus) Enum() *ConnectStatus {
-	p := new(ConnectStatus)
+func (x AckStatus) Enum() *AckStatus {
+	p := new(AckStatus)
 	*p = x
 	return p
 }
 
-func (x ConnectStatus) String() string {
+func (x AckStatus) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ConnectStatus) Descriptor() protoreflect.EnumDescriptor {
+func (AckStatus) Descriptor() protoreflect.EnumDescriptor {
 	return file_message_proto_enumTypes[0].Descriptor()
 }
 
-func (ConnectStatus) Type() protoreflect.EnumType {
+func (AckStatus) Type() protoreflect.EnumType {
 	return &file_message_proto_enumTypes[0]
 }
 
-func (x ConnectStatus) Number() protoreflect.EnumNumber {
+func (x AckStatus) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ConnectStatus.Descriptor instead.
-func (ConnectStatus) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use AckStatus.Descriptor instead.
+func (AckStatus) EnumDescriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{0}
 }
 
@@ -129,20 +129,21 @@ func (MessageUnitType) EnumDescriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
+// TODO 不知道是否合理，到时候再改吧
 type Message struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// MessageType type = 1;
 	SenderId    string `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
 	ReceiverId  string `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
 	CreatedTime int64  `protobuf:"varint,4,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
+	MessageId   string `protobuf:"bytes,11,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	// Types that are valid to be assigned to Data:
 	//
-	//	*Message_ConnectMessageRequest
-	//	*Message_ConnectMessageResponse
-	//	*Message_CandidateMessage
-	//	*Message_ChatMessage
-	//	*Message_CallSdp
-	//	*Message_AnswerSdp
+	//	*Message_Ack
+	//	*Message_Candidate
+	//	*Message_Chat
+	//	*Message_Call
+	//	*Message_Answer
 	Data          isMessage_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -199,6 +200,13 @@ func (x *Message) GetCreatedTime() int64 {
 	return 0
 }
 
+func (x *Message) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
 func (x *Message) GetData() isMessage_Data {
 	if x != nil {
 		return x.Data
@@ -206,55 +214,46 @@ func (x *Message) GetData() isMessage_Data {
 	return nil
 }
 
-func (x *Message) GetConnectMessageRequest() *ConnectMessageRequest {
+func (x *Message) GetAck() *Ack {
 	if x != nil {
-		if x, ok := x.Data.(*Message_ConnectMessageRequest); ok {
-			return x.ConnectMessageRequest
+		if x, ok := x.Data.(*Message_Ack); ok {
+			return x.Ack
 		}
 	}
 	return nil
 }
 
-func (x *Message) GetConnectMessageResponse() *ConnectMessageResponse {
+func (x *Message) GetCandidate() *Candidate {
 	if x != nil {
-		if x, ok := x.Data.(*Message_ConnectMessageResponse); ok {
-			return x.ConnectMessageResponse
+		if x, ok := x.Data.(*Message_Candidate); ok {
+			return x.Candidate
 		}
 	}
 	return nil
 }
 
-func (x *Message) GetCandidateMessage() *CandidateMessage {
+func (x *Message) GetChat() *Chat {
 	if x != nil {
-		if x, ok := x.Data.(*Message_CandidateMessage); ok {
-			return x.CandidateMessage
+		if x, ok := x.Data.(*Message_Chat); ok {
+			return x.Chat
 		}
 	}
 	return nil
 }
 
-func (x *Message) GetChatMessage() *ChatMessage {
+func (x *Message) GetCall() *Sdp {
 	if x != nil {
-		if x, ok := x.Data.(*Message_ChatMessage); ok {
-			return x.ChatMessage
+		if x, ok := x.Data.(*Message_Call); ok {
+			return x.Call
 		}
 	}
 	return nil
 }
 
-func (x *Message) GetCallSdp() *SdpMessage {
+func (x *Message) GetAnswer() *Sdp {
 	if x != nil {
-		if x, ok := x.Data.(*Message_CallSdp); ok {
-			return x.CallSdp
-		}
-	}
-	return nil
-}
-
-func (x *Message) GetAnswerSdp() *SdpMessage {
-	if x != nil {
-		if x, ok := x.Data.(*Message_AnswerSdp); ok {
-			return x.AnswerSdp
+		if x, ok := x.Data.(*Message_Answer); ok {
+			return x.Answer
 		}
 	}
 	return nil
@@ -264,63 +263,58 @@ type isMessage_Data interface {
 	isMessage_Data()
 }
 
-type Message_ConnectMessageRequest struct {
-	ConnectMessageRequest *ConnectMessageRequest `protobuf:"bytes,5,opt,name=connect_message_request,json=connectMessageRequest,proto3,oneof"`
+type Message_Ack struct {
+	Ack *Ack `protobuf:"bytes,6,opt,name=ack,proto3,oneof"`
 }
 
-type Message_ConnectMessageResponse struct {
-	ConnectMessageResponse *ConnectMessageResponse `protobuf:"bytes,6,opt,name=connect_message_response,json=connectMessageResponse,proto3,oneof"`
+type Message_Candidate struct {
+	// Connect   connect   = 5;
+	Candidate *Candidate `protobuf:"bytes,7,opt,name=candidate,proto3,oneof"`
 }
 
-type Message_CandidateMessage struct {
-	CandidateMessage *CandidateMessage `protobuf:"bytes,7,opt,name=candidate_message,json=candidateMessage,proto3,oneof"`
+type Message_Chat struct {
+	Chat *Chat `protobuf:"bytes,8,opt,name=chat,proto3,oneof"`
 }
 
-type Message_ChatMessage struct {
-	ChatMessage *ChatMessage `protobuf:"bytes,8,opt,name=chat_message,json=chatMessage,proto3,oneof"`
+type Message_Call struct {
+	Call *Sdp `protobuf:"bytes,9,opt,name=call,proto3,oneof"`
 }
 
-type Message_CallSdp struct {
-	CallSdp *SdpMessage `protobuf:"bytes,9,opt,name=call_sdp,json=callSdp,proto3,oneof"`
+type Message_Answer struct {
+	Answer *Sdp `protobuf:"bytes,10,opt,name=answer,proto3,oneof"`
 }
 
-type Message_AnswerSdp struct {
-	AnswerSdp *SdpMessage `protobuf:"bytes,10,opt,name=answer_sdp,json=answerSdp,proto3,oneof"`
-}
+func (*Message_Ack) isMessage_Data() {}
 
-func (*Message_ConnectMessageRequest) isMessage_Data() {}
+func (*Message_Candidate) isMessage_Data() {}
 
-func (*Message_ConnectMessageResponse) isMessage_Data() {}
+func (*Message_Chat) isMessage_Data() {}
 
-func (*Message_CandidateMessage) isMessage_Data() {}
+func (*Message_Call) isMessage_Data() {}
 
-func (*Message_ChatMessage) isMessage_Data() {}
+func (*Message_Answer) isMessage_Data() {}
 
-func (*Message_CallSdp) isMessage_Data() {}
-
-func (*Message_AnswerSdp) isMessage_Data() {}
-
-type SdpMessage struct {
+type Sdp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Sdp           string                 `protobuf:"bytes,2,opt,name=sdp,proto3" json:"sdp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SdpMessage) Reset() {
-	*x = SdpMessage{}
+func (x *Sdp) Reset() {
+	*x = Sdp{}
 	mi := &file_message_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SdpMessage) String() string {
+func (x *Sdp) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SdpMessage) ProtoMessage() {}
+func (*Sdp) ProtoMessage() {}
 
-func (x *SdpMessage) ProtoReflect() protoreflect.Message {
+func (x *Sdp) ProtoReflect() protoreflect.Message {
 	mi := &file_message_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -332,12 +326,12 @@ func (x *SdpMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SdpMessage.ProtoReflect.Descriptor instead.
-func (*SdpMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use Sdp.ProtoReflect.Descriptor instead.
+func (*Sdp) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SdpMessage) GetSdp() string {
+func (x *Sdp) GetSdp() string {
 	if x != nil {
 		return x.Sdp
 	}
@@ -345,27 +339,27 @@ func (x *SdpMessage) GetSdp() string {
 }
 
 // 已有的消息与枚举
-type ConnectMessageRequest struct {
+type Connect struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DisplayName   string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ConnectMessageRequest) Reset() {
-	*x = ConnectMessageRequest{}
+func (x *Connect) Reset() {
+	*x = Connect{}
 	mi := &file_message_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ConnectMessageRequest) String() string {
+func (x *Connect) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectMessageRequest) ProtoMessage() {}
+func (*Connect) ProtoMessage() {}
 
-func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
+func (x *Connect) ProtoReflect() protoreflect.Message {
 	mi := &file_message_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -377,39 +371,41 @@ func (x *ConnectMessageRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectMessageRequest.ProtoReflect.Descriptor instead.
-func (*ConnectMessageRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Connect.ProtoReflect.Descriptor instead.
+func (*Connect) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ConnectMessageRequest) GetDisplayName() string {
+func (x *Connect) GetDisplayName() string {
 	if x != nil {
 		return x.DisplayName
 	}
 	return ""
 }
 
-type ConnectMessageResponse struct {
+type Ack struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        ConnectStatus          `protobuf:"varint,1,opt,name=status,proto3,enum=message.ConnectStatus" json:"status,omitempty"`
+	Status        AckStatus              `protobuf:"varint,1,opt,name=status,proto3,enum=message.AckStatus" json:"status,omitempty"`
+	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	MessageId     string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ConnectMessageResponse) Reset() {
-	*x = ConnectMessageResponse{}
+func (x *Ack) Reset() {
+	*x = Ack{}
 	mi := &file_message_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ConnectMessageResponse) String() string {
+func (x *Ack) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConnectMessageResponse) ProtoMessage() {}
+func (*Ack) ProtoMessage() {}
 
-func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
+func (x *Ack) ProtoReflect() protoreflect.Message {
 	mi := &file_message_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -421,19 +417,33 @@ func (x *ConnectMessageResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ConnectMessageResponse.ProtoReflect.Descriptor instead.
-func (*ConnectMessageResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use Ack.ProtoReflect.Descriptor instead.
+func (*Ack) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ConnectMessageResponse) GetStatus() ConnectStatus {
+func (x *Ack) GetStatus() AckStatus {
 	if x != nil {
 		return x.Status
 	}
-	return ConnectStatus_CONNECT_STATUS_UNSPECIFIED
+	return AckStatus_ACK_STATUS_UNSPECIFIED
 }
 
-type CandidateMessage struct {
+func (x *Ack) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *Ack) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+type Candidate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SdpMid        string                 `protobuf:"bytes,2,opt,name=sdp_mid,json=sdpMid,proto3" json:"sdp_mid,omitempty"`
 	SdpMlineIndex int32                  `protobuf:"varint,3,opt,name=sdp_mline_index,json=sdpMlineIndex,proto3" json:"sdp_mline_index,omitempty"`
@@ -442,20 +452,20 @@ type CandidateMessage struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CandidateMessage) Reset() {
-	*x = CandidateMessage{}
+func (x *Candidate) Reset() {
+	*x = Candidate{}
 	mi := &file_message_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CandidateMessage) String() string {
+func (x *Candidate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CandidateMessage) ProtoMessage() {}
+func (*Candidate) ProtoMessage() {}
 
-func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
+func (x *Candidate) ProtoReflect() protoreflect.Message {
 	mi := &file_message_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -467,26 +477,26 @@ func (x *CandidateMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CandidateMessage.ProtoReflect.Descriptor instead.
-func (*CandidateMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use Candidate.ProtoReflect.Descriptor instead.
+func (*Candidate) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CandidateMessage) GetSdpMid() string {
+func (x *Candidate) GetSdpMid() string {
 	if x != nil {
 		return x.SdpMid
 	}
 	return ""
 }
 
-func (x *CandidateMessage) GetSdpMlineIndex() int32 {
+func (x *Candidate) GetSdpMlineIndex() int32 {
 	if x != nil {
 		return x.SdpMlineIndex
 	}
 	return 0
 }
 
-func (x *CandidateMessage) GetSdp() string {
+func (x *Candidate) GetSdp() string {
 	if x != nil {
 		return x.Sdp
 	}
@@ -494,7 +504,7 @@ func (x *CandidateMessage) GetSdp() string {
 }
 
 // 从 ChatMessage 迁移
-type ChatMessage struct {
+type Chat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	MessageChain  []*MessageUnit         `protobuf:"bytes,3,rep,name=message_chain,json=messageChain,proto3" json:"message_chain,omitempty"`
@@ -502,20 +512,20 @@ type ChatMessage struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ChatMessage) Reset() {
-	*x = ChatMessage{}
+func (x *Chat) Reset() {
+	*x = Chat{}
 	mi := &file_message_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ChatMessage) String() string {
+func (x *Chat) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ChatMessage) ProtoMessage() {}
+func (*Chat) ProtoMessage() {}
 
-func (x *ChatMessage) ProtoReflect() protoreflect.Message {
+func (x *Chat) ProtoReflect() protoreflect.Message {
 	mi := &file_message_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -527,19 +537,19 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
-func (*ChatMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use Chat.ProtoReflect.Descriptor instead.
+func (*Chat) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ChatMessage) GetDisplayName() string {
+func (x *Chat) GetDisplayName() string {
 	if x != nil {
 		return x.DisplayName
 	}
 	return ""
 }
 
-func (x *ChatMessage) GetMessageChain() []*MessageUnit {
+func (x *Chat) GetMessageChain() []*MessageUnit {
 	if x != nil {
 		return x.MessageChain
 	}
@@ -603,42 +613,44 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\x96\x04\n" +
+	"\rmessage.proto\x12\amessage\"\xd8\x02\n" +
 	"\aMessage\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
 	"\vreceiver_id\x18\x03 \x01(\tR\n" +
 	"receiverId\x12!\n" +
-	"\fcreated_time\x18\x04 \x01(\x03R\vcreatedTime\x12X\n" +
-	"\x17connect_message_request\x18\x05 \x01(\v2\x1e.message.ConnectMessageRequestH\x00R\x15connectMessageRequest\x12[\n" +
-	"\x18connect_message_response\x18\x06 \x01(\v2\x1f.message.ConnectMessageResponseH\x00R\x16connectMessageResponse\x12H\n" +
-	"\x11candidate_message\x18\a \x01(\v2\x19.message.CandidateMessageH\x00R\x10candidateMessage\x129\n" +
-	"\fchat_message\x18\b \x01(\v2\x14.message.ChatMessageH\x00R\vchatMessage\x120\n" +
-	"\bcall_sdp\x18\t \x01(\v2\x13.message.SdpMessageH\x00R\acallSdp\x124\n" +
+	"\fcreated_time\x18\x04 \x01(\x03R\vcreatedTime\x12\x1d\n" +
 	"\n" +
-	"answer_sdp\x18\n" +
-	" \x01(\v2\x13.message.SdpMessageH\x00R\tanswerSdpB\x06\n" +
-	"\x04data\"\x1e\n" +
+	"message_id\x18\v \x01(\tR\tmessageId\x12 \n" +
+	"\x03ack\x18\x06 \x01(\v2\f.message.AckH\x00R\x03ack\x122\n" +
+	"\tcandidate\x18\a \x01(\v2\x12.message.CandidateH\x00R\tcandidate\x12#\n" +
+	"\x04chat\x18\b \x01(\v2\r.message.ChatH\x00R\x04chat\x12\"\n" +
+	"\x04call\x18\t \x01(\v2\f.message.SdpH\x00R\x04call\x12&\n" +
+	"\x06answer\x18\n" +
+	" \x01(\v2\f.message.SdpH\x00R\x06answerB\x06\n" +
+	"\x04data\"\x17\n" +
+	"\x03Sdp\x12\x10\n" +
+	"\x03sdp\x18\x02 \x01(\tR\x03sdp\",\n" +
+	"\aConnect\x12!\n" +
+	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\"h\n" +
+	"\x03Ack\x12*\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x12.message.AckStatusR\x06status\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\x12\x1d\n" +
 	"\n" +
-	"SdpMessage\x12\x10\n" +
-	"\x03sdp\x18\x02 \x01(\tR\x03sdp\":\n" +
-	"\x15ConnectMessageRequest\x12!\n" +
-	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\"H\n" +
-	"\x16ConnectMessageResponse\x12.\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x16.message.ConnectStatusR\x06status\"e\n" +
-	"\x10CandidateMessage\x12\x17\n" +
+	"message_id\x18\x02 \x01(\tR\tmessageId\"^\n" +
+	"\tCandidate\x12\x17\n" +
 	"\asdp_mid\x18\x02 \x01(\tR\x06sdpMid\x12&\n" +
 	"\x0fsdp_mline_index\x18\x03 \x01(\x05R\rsdpMlineIndex\x12\x10\n" +
-	"\x03sdp\x18\x04 \x01(\tR\x03sdp\"k\n" +
-	"\vChatMessage\x12!\n" +
+	"\x03sdp\x18\x04 \x01(\tR\x03sdp\"d\n" +
+	"\x04Chat\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x129\n" +
 	"\rmessage_chain\x18\x03 \x03(\v2\x14.message.MessageUnitR\fmessageChain\"U\n" +
 	"\vMessageUnit\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.message.MessageUnitTypeR\x04type\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage*Y\n" +
-	"\rConnectStatus\x12\x1e\n" +
-	"\x1aCONNECT_STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aSUCCESS\x10\x01\x12\x11\n" +
-	"\rALREADY_EXIST\x10\x02\x12\b\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage*H\n" +
+	"\tAckStatus\x12\x1a\n" +
+	"\x16ACK_STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aSENDING\x10\x04\x12\b\n" +
+	"\x04SENT\x10\x05\x12\b\n" +
 	"\x04FAIL\x10\x03*c\n" +
 	"\x0fMessageUnitType\x12!\n" +
 	"\x1dMESSAGE_UNIT_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
@@ -664,31 +676,30 @@ func file_message_proto_rawDescGZIP() []byte {
 var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_message_proto_goTypes = []any{
-	(ConnectStatus)(0),             // 0: message.ConnectStatus
-	(MessageUnitType)(0),           // 1: message.MessageUnitType
-	(*Message)(nil),                // 2: message.Message
-	(*SdpMessage)(nil),             // 3: message.SdpMessage
-	(*ConnectMessageRequest)(nil),  // 4: message.ConnectMessageRequest
-	(*ConnectMessageResponse)(nil), // 5: message.ConnectMessageResponse
-	(*CandidateMessage)(nil),       // 6: message.CandidateMessage
-	(*ChatMessage)(nil),            // 7: message.ChatMessage
-	(*MessageUnit)(nil),            // 8: message.MessageUnit
+	(AckStatus)(0),       // 0: message.AckStatus
+	(MessageUnitType)(0), // 1: message.MessageUnitType
+	(*Message)(nil),      // 2: message.Message
+	(*Sdp)(nil),          // 3: message.Sdp
+	(*Connect)(nil),      // 4: message.Connect
+	(*Ack)(nil),          // 5: message.Ack
+	(*Candidate)(nil),    // 6: message.Candidate
+	(*Chat)(nil),         // 7: message.Chat
+	(*MessageUnit)(nil),  // 8: message.MessageUnit
 }
 var file_message_proto_depIdxs = []int32{
-	4, // 0: message.Message.connect_message_request:type_name -> message.ConnectMessageRequest
-	5, // 1: message.Message.connect_message_response:type_name -> message.ConnectMessageResponse
-	6, // 2: message.Message.candidate_message:type_name -> message.CandidateMessage
-	7, // 3: message.Message.chat_message:type_name -> message.ChatMessage
-	3, // 4: message.Message.call_sdp:type_name -> message.SdpMessage
-	3, // 5: message.Message.answer_sdp:type_name -> message.SdpMessage
-	0, // 6: message.ConnectMessageResponse.status:type_name -> message.ConnectStatus
-	8, // 7: message.ChatMessage.message_chain:type_name -> message.MessageUnit
-	1, // 8: message.MessageUnit.type:type_name -> message.MessageUnitType
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	5, // 0: message.Message.ack:type_name -> message.Ack
+	6, // 1: message.Message.candidate:type_name -> message.Candidate
+	7, // 2: message.Message.chat:type_name -> message.Chat
+	3, // 3: message.Message.call:type_name -> message.Sdp
+	3, // 4: message.Message.answer:type_name -> message.Sdp
+	0, // 5: message.Ack.status:type_name -> message.AckStatus
+	8, // 6: message.Chat.message_chain:type_name -> message.MessageUnit
+	1, // 7: message.MessageUnit.type:type_name -> message.MessageUnitType
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_message_proto_init() }
@@ -697,12 +708,11 @@ func file_message_proto_init() {
 		return
 	}
 	file_message_proto_msgTypes[0].OneofWrappers = []any{
-		(*Message_ConnectMessageRequest)(nil),
-		(*Message_ConnectMessageResponse)(nil),
-		(*Message_CandidateMessage)(nil),
-		(*Message_ChatMessage)(nil),
-		(*Message_CallSdp)(nil),
-		(*Message_AnswerSdp)(nil),
+		(*Message_Ack)(nil),
+		(*Message_Candidate)(nil),
+		(*Message_Chat)(nil),
+		(*Message_Call)(nil),
+		(*Message_Answer)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

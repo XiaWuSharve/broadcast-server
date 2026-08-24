@@ -17,17 +17,17 @@ import (
 )
 
 type KcpServer struct {
-	ServerBase[net.Conn, frame.Frame]
+	ServerBase[net.Conn, frame.ReceiveFrame]
 }
 
 var _ Listener = (*KcpServer)(nil)
-var _ DataTransformer[frame.Frame] = (*KcpServer)(nil)
+var _ DataTransformer[frame.ReceiveFrame] = (*KcpServer)(nil)
 
 func NewKcpServer() *KcpServer {
 	server := &KcpServer{
-		ServerBase: ServerBase[net.Conn, frame.Frame]{
+		ServerBase: ServerBase[net.Conn, frame.ReceiveFrame]{
 			// TODO config file
-			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.Frame]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
+			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.ReceiveFrame]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 	}
 	server.DataTransformer = server
@@ -53,7 +53,7 @@ func (s *KcpServer) Listen(ctx context.Context, listener net.Listener) error {
 	}
 }
 
-func (s *KcpServer) TransformRequest(data *frame.Frame) (int64, *message.Message, error) {
+func (s *KcpServer) TransformRequest(data *frame.ReceiveFrame) (int64, *message.Message, error) {
 	var m message.Message
 	if err := proto.Unmarshal(data.Payload, &m); err != nil {
 		return 0, nil, fmt.Errorf("cannot parse data %s: %w", data.Payload, err)
@@ -61,8 +61,8 @@ func (s *KcpServer) TransformRequest(data *frame.Frame) (int64, *message.Message
 	return data.CreatedTime, &m, nil
 }
 
-func (s *KcpServer) TransformResponse(createdTime int64, mess *message.Message) *frame.Frame {
-	var frame frame.Frame
+func (s *KcpServer) TransformResponse(createdTime int64, mess *message.Message) *frame.ReceiveFrame {
+	var frame frame.ReceiveFrame
 	messBytes, _ := proto.Marshal(mess)
 	frame.Payload = messBytes
 	frame.CreatedTime = createdTime

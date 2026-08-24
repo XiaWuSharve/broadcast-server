@@ -16,8 +16,8 @@ type Mq interface {
 }
 
 type ProducerConsumerCreater[P, C any] interface {
-	CreateProducer(nsqdAddress string, byter utils.Byter[P]) (*P, error)
-	CreateConsumer(nsqLookupdAddress string, parser utils.Parser[C]) (*C, error)
+	CreateProducer(nsqdAddress string, byter utils.Encoder[P]) (*P, error)
+	CreateConsumer(nsqLookupdAddress string, parser utils.Decoder[C]) (*C, error)
 }
 
 type MqBase[I, O any] struct {
@@ -36,19 +36,19 @@ func (mq *MqBase[I, O]) GetNsqLookupdAddress() string {
 	return mq.NsqLookupdAddress
 }
 
-func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter utils.Byter[I]) (*Producer[I], error) {
+func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter utils.Encoder[I]) (*ProducerBase[I], error) {
 	producer, err := nsq.NewProducer(nsqdAddress, mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
-	return &Producer[I]{
+	return &ProducerBase[I]{
 		Producer: producer,
 		Mq:       mq,
 		Byter:    byter,
 	}, nil
 }
 
-func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string, parser utils.Parser[O]) (*Consumer[O], error) {
+func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string, parser utils.Decoder[O]) (*Consumer[O], error) {
 	consumer, err := nsq.NewConsumer(mq.Topic, "processor", mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
@@ -85,7 +85,7 @@ func newBaseMq[I, O any](topic string) (*MqBase[I, O], error) {
 }
 
 type ReceiveMq struct {
-	MqBase[*frame.Frame, *message.Message]
+	MqBase[*frame.ReceiveFrame, *message.Message]
 }
 
 func (rmq *ReceiveMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer, error) {
@@ -93,7 +93,7 @@ func (rmq *ReceiveMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer
 	if err != nil {
 		return nil, err
 	}
-	return &ReceiveProducer{Producer: *baseProducer}, nil
+	return &ReceiveProducer{ProducerBase: *baseProducer}, nil
 }
 
 func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer, error) {
@@ -107,7 +107,7 @@ func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer
 }
 
 func NewRecieveMq() (*ReceiveMq, error) {
-	mq, err := newBaseMq[*frame.Frame, *message.Message]("input_message")
+	mq, err := newBaseMq[*frame.ReceiveFrame, *message.Message]("input_message")
 	if err != nil {
 		return nil, err
 	}

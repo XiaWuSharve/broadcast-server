@@ -50,7 +50,7 @@ func TestKCP(t *testing.T) {
 			},
 		},
 	})
-	c.Send(&frame.Frame{
+	c.Send(&frame.ReceiveFrame{
 		CreatedTime: time.Now().UnixMilli(),
 		Payload:     payload,
 	})
@@ -86,7 +86,7 @@ func TestKCP(t *testing.T) {
 	payload, _ = proto.Marshal(dto)
 	jsonPayload, _ := json.Marshal(dto)
 
-	c.Send(&frame.Frame{
+	c.Send(&frame.ReceiveFrame{
 		CreatedTime: time.Now().UnixMilli(),
 		Payload:     payload,
 	})
