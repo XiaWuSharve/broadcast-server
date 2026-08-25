@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/XiaWuSharve/whisperly/utils"
 )
 
@@ -21,21 +20,15 @@ type Listener interface {
 	Listen(ctx context.Context, listener net.Listener) error
 }
 
-type DataTransformer[M any] interface {
-	TransformRequest(data *M) (int64, *message.Message, error)
-	TransformResponse(createdTime int64, mess *message.Message) *M
-}
-
-type ServerBase[ConnType any, MessType any] struct {
+type ServerBase[ConnType any] struct {
 	Listener
-	DataTransformer[MessType]
 	registered *utils.ShardMap[string, *client.Client]
 	wg         sync.WaitGroup
 }
 
-var _ Server = (*ServerBase[struct{}, struct{}])(nil)
+var _ Server = (*ServerBase[any])(nil)
 
-func (s *ServerBase[C, M]) Start(ctx context.Context, listener net.Listener) error {
+func (s *ServerBase[C]) Start(ctx context.Context, listener net.Listener) error {
 	slog.Info("server started", "addr", listener.Addr().String())
 	go func() {
 		<-ctx.Done()
@@ -51,7 +44,7 @@ func (s *ServerBase[C, M]) Start(ctx context.Context, listener net.Listener) err
 	return nil
 }
 
-func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client) {
+func (s *ServerBase[C]) CreateConn(ctx context.Context, c *client.Client) {
 
 	s.wg.Go(func() {
 		if err := s.Handle(ctx, c); err != nil {
@@ -81,7 +74,7 @@ func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client) {
 }
 
 // TODO 业务解耦
-func (s *ServerBase[C, M]) Handle(ctx context.Context, c *client.Client) error {
+func (s *ServerBase[C]) Handle(ctx context.Context, c *client.Client) error {
 	slog.Info("started to handle an anonymous client")
 BEGIN:
 	// TODO 能否每个data都启动一个goroutine？

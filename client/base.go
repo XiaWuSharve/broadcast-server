@@ -23,18 +23,15 @@ type Conn interface {
 
 type Client struct {
 	Conn
-	Reader          io.Reader
+	wg              sync.WaitGroup
 	ReceiveProducer mq.Producer[*frame.ReceiveFrame]
 	SendConsumer    mq.Consumer[*frame.SendFrame]
 	ReceiveFrame    *frame.ReceiveFrame
+	HeaderBytes     [13]byte
+	streamEncoder   utils.Encoder[*frame.SendFrame]
+	streamDecoder   utils.FrameStreamDecoder
 	ReceiveErr      error
 	SendErr         error
-	wg              sync.WaitGroup
-	encoder         utils.Encoder[*frame.SendFrame]
-	SendBytes       []byte
-	streamDecoder   utils.FrameStreamDecoder
-	frame           *frame.ReceiveFrame
-	Err             error
 }
 
 var _ mq.Handler[*frame.SendFrame] = (*Client)(nil)
@@ -50,8 +47,9 @@ func (c *Client) Start(ctx context.Context) error {
 }
 
 func (c *Client) HandleReceive(ctx context.Context) error {
+	reader := c.GetReader()
 	for {
-		c.frame, c.ReceiveErr = c.streamDecoder.Parse(c.Reader)
+		c.ReceiveFrame, c.ReceiveErr = c.streamDecoder.Parse(reader)
 		if c.ReceiveErr != nil {
 			if errors.Is(c.ReceiveErr, net.ErrClosed) {
 				return c.ReceiveErr
@@ -85,10 +83,11 @@ func (c *Client) HandleSend(ctx context.Context) error {
 }
 
 func (c *Client) Handle(frame *frame.SendFrame) error {
-	binary.BigEndian.PutUint64(c.Wbuf[:8], uint64(mess.CreatedTime))
-	binary.BigEndian.PutUint32(c.Wbuf[8:], uint32(len(mess.Payload)))
-	slog.Debug("client sending kcp frame", "bytes", string(append(c.Wbuf[:], mess.Payload...)))
-	c.SendErr = c.Conn.Send(append(c.Wbuf[:], mess.Payload...))
+	c.HeaderBytes[0] = byte(frame.AckStatus)
+	binary.BigEndian.PutUint64(c.HeaderBytes[1:9], uint64(frame.ReceiverId))
+	binary.BigEndian.PutUint32(c.HeaderBytes[9:13], uint32(len(frame.Payload)))
+	slog.Debug("client sending kcp frame")
+	c.SendErr = c.Conn.Send(append(c.HeaderBytes[0:13], frame.Payload...))
 
 	// TODO 入刷写队列
 	if c.SendErr != nil {

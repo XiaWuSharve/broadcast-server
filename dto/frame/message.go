@@ -9,6 +9,6 @@ type ReceiveFrame struct {
 
 type SendFrame struct {
 	AckStatus  message.AckStatus
-	ReceiverId string
+	ReceiverId int64
 	Payload    []byte
 }

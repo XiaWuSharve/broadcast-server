@@ -10,7 +10,7 @@ import (
 )
 
 type WsConn struct {
-	websocket.Conn
+	*websocket.Conn
 	Err    error
 	reader io.Reader
 	n      int
