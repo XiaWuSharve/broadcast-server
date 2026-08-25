@@ -1,6 +1,4 @@
-package frame
-
-import "github.com/XiaWuSharve/whisperly/dto/message"
+package datas
 
 type ReceiveFrame struct {
 	CreatedTime int64
@@ -8,7 +6,7 @@ type ReceiveFrame struct {
 }
 
 type SendFrame struct {
-	AckStatus  message.AckStatus
+	AckStatus  AckStatus
 	ReceiverId int64
 	Payload    []byte
 }

@@ -3,9 +3,8 @@ package mq
 import (
 	"fmt"
 
-	"github.com/XiaWuSharve/whisperly/dto/frame"
-	"github.com/XiaWuSharve/whisperly/dto/message"
-	"github.com/XiaWuSharve/whisperly/utils"
+	"github.com/XiaWuSharve/whisperly/datas"
+
 	"github.com/nsqio/go-nsq"
 )
 
@@ -15,7 +14,7 @@ type Producer[MessType any] interface {
 }
 
 type ProducerBase[MessType any] struct {
-	Byter    utils.Encoder[MessType]
+	Byter    datas.Encoder[MessType]
 	Producer *nsq.Producer
 	Mq       Mq
 }
@@ -35,15 +34,15 @@ func (p *ProducerBase[MessType]) Close() {
 }
 
 type ReceiveProducer struct {
-	ProducerBase[*frame.ReceiveFrame]
+	ProducerBase[*datas.ReceiveFrame]
 }
 
-var _ Producer[*frame.ReceiveFrame] = (*ReceiveProducer)(nil)
+var _ Producer[*datas.ReceiveFrame] = (*ReceiveProducer)(nil)
 
 type SendProducer struct {
-	ProducerBase[*message.Message]
+	ProducerBase[*datas.Message]
 }
 
-var _ Producer[*message.Message] = (*SendProducer)(nil)
+var _ Producer[*datas.Message] = (*SendProducer)(nil)
 
 // type BatchFlushProducer = Producer[[]byte]

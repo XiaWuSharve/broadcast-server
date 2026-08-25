@@ -28,7 +28,7 @@ type Config struct {
 var Cfg = Config{
 	Protocol:             "kcp",
 	Host:                 "0.0.0.0",
-	Port:                 3001, // 根据 YAML 补全
+	Port:                 3001,
 	ReadBufferSize:       1024,
 	WriteBufferSize:      1024,
 	TimeTolerance:        300,

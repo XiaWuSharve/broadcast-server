@@ -3,13 +3,12 @@ package mq
 import (
 	"fmt"
 
-	"github.com/XiaWuSharve/whisperly/dto/message"
-	"github.com/XiaWuSharve/whisperly/utils"
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/nsqio/go-nsq"
 )
 
 type Consumer[MessType any] struct {
-	parser   utils.Decoder[MessType]
+	parser   datas.Decoder[MessType]
 	Consumer *nsq.Consumer
 	Mq       Mq
 }
@@ -43,7 +42,7 @@ func (c *Consumer[MessType]) Stop() chan int {
 }
 
 type ReceiveConsumer struct {
-	Consumer[*message.Message]
+	Consumer[*datas.Message]
 }
 
 // type SendConsumer = Consumer[[]byte]

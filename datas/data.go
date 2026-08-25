@@ -1,4 +1,4 @@
-package utils
+package datas
 
 import (
 	"encoding/binary"
@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/XiaWuSharve/whisperly/config"
-	"github.com/XiaWuSharve/whisperly/dto/frame"
-	"github.com/XiaWuSharve/whisperly/dto/message"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -31,21 +29,21 @@ type FrameByter struct {
 	Buf [8]byte
 }
 
-var _ Encoder[*frame.ReceiveFrame] = (*FrameByter)(nil)
+var _ Encoder[*ReceiveFrame] = (*FrameByter)(nil)
 
-func (p *FrameByter) ToByte(data *frame.ReceiveFrame) []byte {
+func (p *FrameByter) ToByte(data *ReceiveFrame) []byte {
 	binary.BigEndian.PutUint64(p.Buf[:], uint64(data.CreatedTime))
 	return append(p.Buf[:], data.Payload...)
 }
 
 type MessageParser struct {
 	CreatedTime int64
-	Message     message.Message
+	Message     Message
 }
 
-var _ Decoder[*message.Message] = (*MessageParser)(nil)
+var _ Decoder[*Message] = (*MessageParser)(nil)
 
-func (mp *MessageParser) Parse(data []byte) (*message.Message, error) {
+func (mp *MessageParser) Parse(data []byte) (*Message, error) {
 	mp.CreatedTime = int64(binary.BigEndian.Uint64(data[0:8]))
 	if err := proto.Unmarshal(data[8:], &mp.Message); err != nil {
 		return nil, err
@@ -57,7 +55,7 @@ func (mp *MessageParser) Parse(data []byte) (*message.Message, error) {
 type FrameStreamDecoder struct {
 	Rbuf       [12]byte
 	Wbuf       [12]byte
-	frame      frame.ReceiveFrame
+	frame      ReceiveFrame
 	PayloadLen int
 	Err        error
 }
@@ -75,7 +73,7 @@ func ValidateTime(createdTime int64) bool {
 	return true
 }
 
-func (fsd *FrameStreamDecoder) Parse(r io.Reader) (*frame.ReceiveFrame, error) {
+func (fsd *FrameStreamDecoder) Parse(r io.Reader) (*ReceiveFrame, error) {
 	// receive frame |CreatedTime 8B|Len 4B -> 1Unit = 1B|
 	// send frame |AckType 1B|MessageId 8B|Len 4B -> 1Unit = 1B|
 	if _, fsd.Err = io.ReadFull(r, fsd.Rbuf[:]); fsd.Err != nil {
@@ -103,12 +101,12 @@ func (fsd *FrameStreamDecoder) Parse(r io.Reader) (*frame.ReceiveFrame, error) {
 }
 
 type Frame2Message struct {
-	Message message.Message
+	Message Message
 }
 
-var _ Converter[*frame.ReceiveFrame, *message.Message] = (*Frame2Message)(nil)
+var _ Converter[*ReceiveFrame, *Message] = (*Frame2Message)(nil)
 
-func (f2m *Frame2Message) Convert(frame *frame.ReceiveFrame) (*message.Message, error) {
+func (f2m *Frame2Message) Convert(frame *ReceiveFrame) (*Message, error) {
 	if err := proto.Unmarshal(frame.Payload, &f2m.Message); err != nil {
 		return nil, err
 	}
@@ -117,14 +115,14 @@ func (f2m *Frame2Message) Convert(frame *frame.ReceiveFrame) (*message.Message, 
 }
 
 type Message2Frame struct {
-	Frame frame.SendFrame
+	Frame SendFrame
 }
 
-var _ Converter[*message.Message, *frame.SendFrame] = (*Message2Frame)(nil)
+var _ Converter[*Message, *SendFrame] = (*Message2Frame)(nil)
 
-func (m2f *Message2Frame) Convert(mess *message.Message) (*frame.SendFrame, error) {
-	m2f.Frame.AckStatus = mess.GetAck().Status
-	m2f.Frame.ReceiverId = mess.ReceiverId
+func (m2f *Message2Frame) Convert(mess *Message) (*SendFrame, error) {
+	// m2f.Frame.AckStatus = mess.GetAck().Status
+	// m2f.Frame.ReceiverId = mess.ReceiverId
 	bytes, err := proto.Marshal(mess)
 	if err != nil {
 		return nil, err

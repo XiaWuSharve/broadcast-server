@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package message;
 
-option go_package = "dto/message";
+option go_package = "datas/";
 option java_package = "com.github.xiawusharve.webrtc";
 // 不支持描述符、嵌套构建器
 option optimize_for = LITE_RUNTIME;

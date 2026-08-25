@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/dto/frame"
+	"github.com/XiaWuSharve/whisperly/dto/data"
 	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/XiaWuSharve/whisperly/server"
 	"github.com/xtaci/kcp-go/v5"
@@ -50,7 +50,7 @@ func TestKCP(t *testing.T) {
 			},
 		},
 	})
-	c.Send(&frame.ReceiveFrame{
+	c.Send(&data.ReceiveFrame{
 		CreatedTime: time.Now().UnixMilli(),
 		Payload:     payload,
 	})
@@ -86,7 +86,7 @@ func TestKCP(t *testing.T) {
 	payload, _ = proto.Marshal(dto)
 	jsonPayload, _ := json.Marshal(dto)
 
-	c.Send(&frame.ReceiveFrame{
+	c.Send(&data.ReceiveFrame{
 		CreatedTime: time.Now().UnixMilli(),
 		Payload:     payload,
 	})

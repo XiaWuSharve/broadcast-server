@@ -4,7 +4,7 @@
 // 	protoc        v7.35.1
 // source: message.proto
 
-package message
+package datas
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -658,8 +658,8 @@ const file_message_proto_rawDesc = "" +
 	"\x04CALL\x10\x02\x12\n" +
 	"\n" +
 	"\x06ANSWER\x10\x03\x12\r\n" +
-	"\tESTABLISH\x10\x04B.\n" +
-	"\x1dcom.github.xiawusharve.webrtcH\x03Z\vdto/messageb\x06proto3"
+	"\tESTABLISH\x10\x04B)\n" +
+	"\x1dcom.github.xiawusharve.webrtcH\x03Z\x06datas/b\x06proto3"
 
 var (
 	file_message_proto_rawDescOnce sync.Once

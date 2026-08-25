@@ -3,9 +3,7 @@ package mq
 import (
 	"fmt"
 
-	"github.com/XiaWuSharve/whisperly/dto/frame"
-	"github.com/XiaWuSharve/whisperly/dto/message"
-	"github.com/XiaWuSharve/whisperly/utils"
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/nsqio/go-nsq"
 	"google.golang.org/protobuf/proto"
 )
@@ -16,8 +14,8 @@ type Mq interface {
 }
 
 type ProducerConsumerCreater[P, C any] interface {
-	CreateProducer(nsqdAddress string, byter utils.Encoder[P]) (*P, error)
-	CreateConsumer(nsqLookupdAddress string, parser utils.Decoder[C]) (*C, error)
+	CreateProducer(nsqdAddress string, byter datas.Encoder[P]) (*P, error)
+	CreateConsumer(nsqLookupdAddress string, parser datas.Decoder[C]) (*C, error)
 }
 
 type MqBase[I, O any] struct {
@@ -36,7 +34,7 @@ func (mq *MqBase[I, O]) GetNsqLookupdAddress() string {
 	return mq.NsqLookupdAddress
 }
 
-func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter utils.Encoder[I]) (*ProducerBase[I], error) {
+func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter datas.Encoder[I]) (*ProducerBase[I], error) {
 	producer, err := nsq.NewProducer(nsqdAddress, mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
@@ -48,7 +46,7 @@ func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter utils.Encoder[I
 	}, nil
 }
 
-func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string, parser utils.Decoder[O]) (*Consumer[O], error) {
+func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string, parser datas.Decoder[O]) (*Consumer[O], error) {
 	consumer, err := nsq.NewConsumer(mq.Topic, "processor", mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
@@ -66,9 +64,9 @@ func (s *ReceiverDataTransformer) TransformRequest(data []byte) ([]byte, error) 
 	return data, nil
 }
 
-func (s *ReceiverDataTransformer) TransformResponse(data []byte) (*message.Message, error) {
-	var m message.Message
-	if err := proto.Unmarshal(data, &m); err != nil {
+func (s *ReceiverDataTransformer) TransformResponse(dat []byte) (*datas.Message, error) {
+	var m datas.Message
+	if err := proto.Unmarshal(dat, &m); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -85,11 +83,11 @@ func newBaseMq[I, O any](topic string) (*MqBase[I, O], error) {
 }
 
 type ReceiveMq struct {
-	MqBase[*frame.ReceiveFrame, *message.Message]
+	MqBase[*datas.ReceiveFrame, *datas.Message]
 }
 
 func (rmq *ReceiveMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer, error) {
-	baseProducer, err := rmq.MqBase.CreateProducer(nsqLookupdAddress, &utils.FrameByter{})
+	baseProducer, err := rmq.MqBase.CreateProducer(nsqLookupdAddress, &datas.FrameByter{})
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +95,7 @@ func (rmq *ReceiveMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer
 }
 
 func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer, error) {
-	baseConsumer, err := rmq.MqBase.CreateConsumer(nsqLookupdAddress, &utils.MessageParser{})
+	baseConsumer, err := rmq.MqBase.CreateConsumer(nsqLookupdAddress, &datas.MessageParser{})
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +105,7 @@ func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer
 }
 
 func NewRecieveMq() (*ReceiveMq, error) {
-	mq, err := newBaseMq[*frame.ReceiveFrame, *message.Message]("input_message")
+	mq, err := newBaseMq[*datas.ReceiveFrame, *datas.Message]("input_message")
 	if err != nil {
 		return nil, err
 	}

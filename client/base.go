@@ -10,10 +10,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/XiaWuSharve/whisperly/dto/frame"
-	"github.com/XiaWuSharve/whisperly/dto/message"
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/XiaWuSharve/whisperly/mq"
-	"github.com/XiaWuSharve/whisperly/utils"
 )
 
 type Conn interface {
@@ -24,17 +22,17 @@ type Conn interface {
 type Client struct {
 	Conn
 	wg              sync.WaitGroup
-	ReceiveProducer mq.Producer[*frame.ReceiveFrame]
-	SendConsumer    mq.Consumer[*frame.SendFrame]
-	ReceiveFrame    *frame.ReceiveFrame
+	ReceiveProducer mq.Producer[*datas.ReceiveFrame]
+	SendConsumer    mq.Consumer[*datas.SendFrame]
+	ReceiveFrame    *datas.ReceiveFrame
 	HeaderBytes     [13]byte
-	streamEncoder   utils.Encoder[*frame.SendFrame]
-	streamDecoder   utils.FrameStreamDecoder
+	streamEncoder   datas.Encoder[*datas.SendFrame]
+	streamDecoder   datas.FrameStreamDecoder
 	ReceiveErr      error
 	SendErr         error
 }
 
-var _ mq.Handler[*frame.SendFrame] = (*Client)(nil)
+var _ mq.Handler[*datas.SendFrame] = (*Client)(nil)
 
 func (c *Client) Start(ctx context.Context) error {
 	c.wg.Go(func() {
@@ -53,7 +51,7 @@ func (c *Client) HandleReceive(ctx context.Context) error {
 		if c.ReceiveErr != nil {
 			if errors.Is(c.ReceiveErr, net.ErrClosed) {
 				return c.ReceiveErr
-			} else if errors.Is(c.ReceiveErr, utils.ErrTimeLargeOffset) {
+			} else if errors.Is(c.ReceiveErr, datas.ErrTimeLargeOffset) {
 				slog.Error(c.ReceiveErr.Error())
 			} else {
 				return fmt.Errorf("failed to handle receive: %w", c.ReceiveErr)
@@ -63,8 +61,8 @@ func (c *Client) HandleReceive(ctx context.Context) error {
 		if c.ReceiveErr != nil {
 			return fmt.Errorf("failed to enqueue: %w", c.ReceiveErr)
 		}
-		c.ReceiveErr = c.Handle(&frame.SendFrame{
-			AckStatus: message.AckStatus_SENDING,
+		c.ReceiveErr = c.Handle(&datas.SendFrame{
+			AckStatus: datas.AckStatus_SENDING,
 		})
 		if c.ReceiveErr != nil {
 			if errors.Is(c.ReceiveErr, net.ErrClosed) {
@@ -82,7 +80,7 @@ func (c *Client) HandleSend(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) Handle(frame *frame.SendFrame) error {
+func (c *Client) Handle(frame *datas.SendFrame) error {
 	c.HeaderBytes[0] = byte(frame.AckStatus)
 	binary.BigEndian.PutUint64(c.HeaderBytes[1:9], uint64(frame.ReceiverId))
 	binary.BigEndian.PutUint32(c.HeaderBytes[9:13], uint32(len(frame.Payload)))
