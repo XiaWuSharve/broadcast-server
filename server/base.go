@@ -29,7 +29,7 @@ type DataTransformer[M any] interface {
 type ServerBase[ConnType any, MessType any] struct {
 	Listener
 	DataTransformer[MessType]
-	registered *utils.ShardMap[string, *client.Client[ConnType, MessType]]
+	registered *utils.ShardMap[string, *client.Client]
 	wg         sync.WaitGroup
 }
 
@@ -51,7 +51,7 @@ func (s *ServerBase[C, M]) Start(ctx context.Context, listener net.Listener) err
 	return nil
 }
 
-func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client[C, M]) {
+func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client) {
 
 	s.wg.Go(func() {
 		if err := s.Handle(ctx, c); err != nil {
@@ -81,7 +81,7 @@ func (s *ServerBase[C, M]) CreateConn(ctx context.Context, c *client.Client[C, M
 }
 
 // TODO 业务解耦
-func (s *ServerBase[C, M]) Handle(ctx context.Context, c *client.Client[C, M]) error {
+func (s *ServerBase[C, M]) Handle(ctx context.Context, c *client.Client) error {
 	slog.Info("started to handle an anonymous client")
 BEGIN:
 	// TODO 能否每个data都启动一个goroutine？

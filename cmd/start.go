@@ -19,7 +19,6 @@ import (
 	"github.com/xtaci/kcp-go/v5"
 )
 
-// TODO Config file
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",

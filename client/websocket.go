@@ -3,53 +3,47 @@ package client
 import (
 	"errors"
 	"fmt"
-	"log/slog"
+	"io"
 	"net"
 
-	"github.com/XiaWuSharve/whisperly/dto/message"
 	"github.com/gorilla/websocket"
-	"google.golang.org/protobuf/proto"
 )
 
-type WebSocketClient struct {
-	Client[*websocket.Conn, message.Message]
+type WsConn struct {
+	websocket.Conn
+	Err    error
+	reader io.Reader
+	n      int
 }
 
-var _ ClientIO[message.Message] = (*WebSocketClient)(nil)
+var _ Conn = (*WsConn)(nil)
+var _ io.Reader = (*WsConn)(nil)
 
-func (c *WebSocketClient) Receive() (*message.Message, error) {
-	_, bytes, err := c.Conn.ReadMessage()
-	if err != nil {
-		if errors.Is(err, websocket.ErrCloseSent) {
-			return nil, net.ErrClosed
+func (c *WsConn) Read(p []byte) (int, error) {
+	c.n, c.Err = c.reader.Read(p)
+	if c.n < len(p) {
+		// 读帧头不允许长度比Payload还长
+		return c.n, io.EOF
+	}
+	if c.Err != nil {
+		if errors.Is(c.Err, io.EOF) {
+			_, c.reader, c.Err = c.Conn.NextReader()
+			if c.Err != nil {
+				if websocket.IsCloseError(c.Err) {
+					return 0, net.ErrClosed
+				}
+				return 0, fmt.Errorf("failed to read message: %w", c.Err)
+			}
+			return c.Read(p)
 		}
-		return nil, fmt.Errorf("failed to read header: %w", err)
 	}
-	var m message.Message
-	if err := proto.Unmarshal(bytes, &m); err != nil {
-		slog.Error("cannot parse", "err", err, "data", string(bytes))
-		return nil, nil
-	}
-	createdTime := m.GetCreatedTime()
-	if !ValidateTime(createdTime) {
-		return nil, nil
-	}
-	return &m, nil
+	return c.n, c.Err
 }
 
-func (c *WebSocketClient) Send(mess *message.Message) error {
-	m, _ := proto.Marshal(mess)
-	return c.Conn.WriteMessage(websocket.BinaryMessage, m)
-}
-
-func NewWebSocketClient(session *websocket.Conn) *WebSocketClient {
-	c := &WebSocketClient{
-		Client: Client[*websocket.Conn, message.Message]{
-			Conn:      session,
-			WriteChan: make(chan *message.Message),
-			ReadChan:  make(chan *message.Message),
-		},
-	}
-	c.ClientIO = c
+func (c *WsConn) GetReader() io.Reader {
 	return c
+}
+
+func (c *WsConn) Send(data []byte) error {
+	return c.Conn.WriteMessage(websocket.BinaryMessage, data)
 }

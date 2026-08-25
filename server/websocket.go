@@ -25,7 +25,6 @@ var _ Listener = (*WebSocketServer)(nil)
 func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 	server := &WebSocketServer{
 		ServerBase: ServerBase[*websocket.Conn, message.Message]{
-			// TODO config file
 			registered: utils.NewShardMap[string, *client.Client[*websocket.Conn, message.Message]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 		upgrader: &websocket.Upgrader{

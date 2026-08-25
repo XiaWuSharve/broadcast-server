@@ -1,4 +1,4 @@
-The project URL of this solution can be found [here](https://roadmap.sh/projects/whisperly). 
+Whisperly: A Go backend server for high throughput and low lantency messaging and WebRTC signal exchanging (VoIP phone call)
 
 # Usage
 

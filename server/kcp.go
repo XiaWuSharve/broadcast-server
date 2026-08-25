@@ -26,7 +26,6 @@ var _ DataTransformer[frame.ReceiveFrame] = (*KcpServer)(nil)
 func NewKcpServer() *KcpServer {
 	server := &KcpServer{
 		ServerBase: ServerBase[net.Conn, frame.ReceiveFrame]{
-			// TODO config file
 			registered: utils.NewShardMap[string, *client.Client[net.Conn, frame.ReceiveFrame]](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
 		},
 	}
