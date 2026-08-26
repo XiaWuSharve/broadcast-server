@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -22,14 +23,16 @@ type Conn interface {
 type Client struct {
 	Conn
 	wg              sync.WaitGroup
+	Id              int64
 	ReceiveProducer mq.Producer[*datas.ReceiveFrame]
 	SendConsumer    mq.Consumer[*datas.SendFrame]
 	ReceiveFrame    *datas.ReceiveFrame
 	HeaderBytes     [13]byte
-	streamEncoder   datas.Encoder[*datas.SendFrame]
-	streamDecoder   datas.FrameStreamDecoder
-	ReceiveErr      error
-	SendErr         error
+	// TODO ?
+	streamEncoder datas.Encoder[*datas.SendFrame]
+	streamDecoder datas.ReceiveFrameStreamDecoder
+	ReceiveErr    error
+	SendErr       error
 }
 
 var _ mq.Handler[*datas.SendFrame] = (*Client)(nil)
@@ -45,7 +48,7 @@ func (c *Client) Start(ctx context.Context) error {
 }
 
 func (c *Client) HandleReceive(ctx context.Context) error {
-	reader := c.GetReader()
+	reader := bufio.NewReader(c.GetReader())
 	for {
 		c.ReceiveFrame, c.ReceiveErr = c.streamDecoder.Parse(reader)
 		if c.ReceiveErr != nil {
@@ -82,7 +85,7 @@ func (c *Client) HandleSend(ctx context.Context) error {
 
 func (c *Client) Handle(frame *datas.SendFrame) error {
 	c.HeaderBytes[0] = byte(frame.AckStatus)
-	binary.BigEndian.PutUint64(c.HeaderBytes[1:9], uint64(frame.ReceiverId))
+	binary.BigEndian.PutUint64(c.HeaderBytes[1:9], uint64(frame.ConnId))
 	binary.BigEndian.PutUint32(c.HeaderBytes[9:13], uint32(len(frame.Payload)))
 	slog.Debug("client sending kcp frame")
 	c.SendErr = c.Conn.Send(append(c.HeaderBytes[0:13], frame.Payload...))

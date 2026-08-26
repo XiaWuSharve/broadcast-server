@@ -23,6 +23,7 @@ type Config struct {
 	ReceiverNum          int      `mapstructure:"receiver-num" yaml:"receiver-num"`
 	SenderNum            int      `mapstructure:"sender-num" yaml:"sender-num"`
 	ProcessorNum         int      `mapstructure:"processor-num" yaml:"processor-num"`
+	NodeId               int64    `mapstructure:"node-id" yaml:"node-id"`
 }
 
 var Cfg = Config{
@@ -38,6 +39,7 @@ var Cfg = Config{
 	ReceiverNum:          10,
 	SenderNum:            10,
 	ProcessorNum:         3,
+	NodeId: 0,
 }
 
 func Init(cmd *cobra.Command) {
@@ -55,7 +57,7 @@ func Init(cmd *cobra.Command) {
 	cmd.PersistentFlags().Int("receiver-num", Cfg.ReceiverNum, "receiver num")
 	cmd.PersistentFlags().Int("sender-num", Cfg.SenderNum, "sender num")
 	cmd.PersistentFlags().Int("processor-num", Cfg.ProcessorNum, "processor num")
-
+	cmd.PersistentFlags().Int64("node-id", Cfg.NodeId, "node id")
 }
 
 func Bind(cmd *cobra.Command) {
@@ -93,5 +95,4 @@ func Bind(cmd *cobra.Command) {
 	if err := viper.Unmarshal(&Cfg); err != nil {
 		panic(err)
 	}
-
 }

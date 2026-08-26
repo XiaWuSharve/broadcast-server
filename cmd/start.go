@@ -14,7 +14,9 @@ import (
 	"syscall"
 
 	"github.com/XiaWuSharve/whisperly/config"
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/XiaWuSharve/whisperly/server"
+	"github.com/bwmarrin/snowflake"
 	"github.com/spf13/cobra"
 	"github.com/xtaci/kcp-go/v5"
 )
@@ -26,6 +28,11 @@ var startCmd = &cobra.Command{
 	Long:  ``,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		config.Bind(cmd)
+		node, err := snowflake.NewNode(config.Cfg.NodeId)
+		if err != nil {
+			panic(err)
+		}
+		datas.Ids = node
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		protocol := config.Cfg.Protocol

@@ -137,6 +137,7 @@ type Message struct {
 	ReceiverId  string `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
 	CreatedTime int64  `protobuf:"varint,4,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
 	MessageId   string `protobuf:"bytes,11,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	ConnId      int64  `protobuf:"varint,12,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
 	// Types that are valid to be assigned to Data:
 	//
 	//	*Message_Ack
@@ -205,6 +206,13 @@ func (x *Message) GetMessageId() string {
 		return x.MessageId
 	}
 	return ""
+}
+
+func (x *Message) GetConnId() int64 {
+	if x != nil {
+		return x.ConnId
+	}
+	return 0
 }
 
 func (x *Message) GetData() isMessage_Data {
@@ -613,14 +621,15 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\xd8\x02\n" +
+	"\rmessage.proto\x12\amessage\"\xf1\x02\n" +
 	"\aMessage\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
 	"\vreceiver_id\x18\x03 \x01(\tR\n" +
 	"receiverId\x12!\n" +
 	"\fcreated_time\x18\x04 \x01(\x03R\vcreatedTime\x12\x1d\n" +
 	"\n" +
-	"message_id\x18\v \x01(\tR\tmessageId\x12 \n" +
+	"message_id\x18\v \x01(\tR\tmessageId\x12\x17\n" +
+	"\aconn_id\x18\f \x01(\x03R\x06connId\x12 \n" +
 	"\x03ack\x18\x06 \x01(\v2\f.message.AckH\x00R\x03ack\x122\n" +
 	"\tcandidate\x18\a \x01(\v2\x12.message.CandidateH\x00R\tcandidate\x12#\n" +
 	"\x04chat\x18\b \x01(\v2\r.message.ChatH\x00R\x04chat\x12\"\n" +

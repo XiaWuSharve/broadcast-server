@@ -8,9 +8,6 @@ import (
 	"net"
 
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/config"
-	"github.com/XiaWuSharve/whisperly/utils"
-	"github.com/cespare/xxhash"
 )
 
 type KcpServer struct {
@@ -21,9 +18,7 @@ var _ Listener = (*KcpServer)(nil)
 
 func NewKcpServer() *KcpServer {
 	server := &KcpServer{
-		ServerBase: ServerBase[net.Conn]{
-			registered: utils.NewShardMap[string, *client.Client](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
-		},
+		ServerBase: ServerBase[net.Conn]{},
 	}
 	server.Listener = server
 	return server

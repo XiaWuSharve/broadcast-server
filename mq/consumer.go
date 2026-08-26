@@ -42,7 +42,7 @@ func (c *Consumer[MessType]) Stop() chan int {
 }
 
 type ReceiveConsumer struct {
-	Consumer[*datas.Message]
+	Consumer[*datas.ReceiveFrame]
 }
 
 // type SendConsumer = Consumer[[]byte]

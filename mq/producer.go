@@ -13,13 +13,13 @@ type Producer[MessType any] interface {
 	Close()
 }
 
-type ProducerBase[MessType any] struct {
+type producerBase[MessType any] struct {
 	Byter    datas.Encoder[MessType]
 	Producer *nsq.Producer
 	Mq       Mq
 }
 
-func (p *ProducerBase[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
+func (p *producerBase[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
 	doneChan := make(chan *nsq.ProducerTransaction)
 	body := p.Byter.ToByte(message)
 	if err := p.Producer.PublishAsync(p.Mq.GetTopic(), body, doneChan); err != nil {
@@ -28,19 +28,19 @@ func (p *ProducerBase[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTr
 	return doneChan, nil
 }
 
-func (p *ProducerBase[MessType]) Close() {
+func (p *producerBase[MessType]) Close() {
 	// Gracefully stop the producer.
 	p.Producer.Stop()
 }
 
 type ReceiveProducer struct {
-	ProducerBase[*datas.ReceiveFrame]
+	producerBase[*datas.ReceiveFrame]
 }
 
 var _ Producer[*datas.ReceiveFrame] = (*ReceiveProducer)(nil)
 
 type SendProducer struct {
-	ProducerBase[*datas.Message]
+	producerBase[*datas.Message]
 }
 
 var _ Producer[*datas.Message] = (*SendProducer)(nil)

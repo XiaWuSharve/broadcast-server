@@ -18,40 +18,40 @@ type ProducerConsumerCreater[P, C any] interface {
 	CreateConsumer(nsqLookupdAddress string, parser datas.Decoder[C]) (*C, error)
 }
 
-type MqBase[I, O any] struct {
+type mqBase[T any] struct {
 	config            *nsq.Config
 	Topic             string
 	NsqLookupdAddress string
 }
 
-var _ Mq = (*MqBase[any, any])(nil)
+var _ Mq = (*mqBase[any])(nil)
 
-func (mq *MqBase[I, O]) GetTopic() string {
+func (mq *mqBase[T]) GetTopic() string {
 	return mq.Topic
 }
 
-func (mq *MqBase[I, O]) GetNsqLookupdAddress() string {
+func (mq *mqBase[T]) GetNsqLookupdAddress() string {
 	return mq.NsqLookupdAddress
 }
 
-func (mq *MqBase[I, O]) CreateProducer(nsqdAddress string, byter datas.Encoder[I]) (*ProducerBase[I], error) {
+func (mq *mqBase[T]) CreateProducer(nsqdAddress string, byter datas.Encoder[T]) (*producerBase[T], error) {
 	producer, err := nsq.NewProducer(nsqdAddress, mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
-	return &ProducerBase[I]{
+	return &producerBase[T]{
 		Producer: producer,
 		Mq:       mq,
 		Byter:    byter,
 	}, nil
 }
 
-func (mq *MqBase[I, O]) CreateConsumer(nsqLookupdAddress string, parser datas.Decoder[O]) (*Consumer[O], error) {
+func (mq *mqBase[T]) CreateConsumer(nsqLookupdAddress string, parser datas.Decoder[T]) (*Consumer[T], error) {
 	consumer, err := nsq.NewConsumer(mq.Topic, "processor", mq.config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
-	return &Consumer[O]{
+	return &Consumer[T]{
 		Consumer: consumer,
 		Mq:       mq,
 		parser:   parser,
@@ -72,10 +72,10 @@ func (s *ReceiverDataTransformer) TransformResponse(dat []byte) (*datas.Message,
 	return &m, nil
 }
 
-func newBaseMq[I, O any](topic string) (*MqBase[I, O], error) {
+func newMqBase[T any](topic string) (*mqBase[T], error) {
 	// Instantiate a consumer that will subscribe to the provided channel.
 	config := nsq.NewConfig()
-	im := &MqBase[I, O]{
+	im := &mqBase[T]{
 		config: config,
 		Topic:  topic,
 	}
@@ -83,19 +83,19 @@ func newBaseMq[I, O any](topic string) (*MqBase[I, O], error) {
 }
 
 type ReceiveMq struct {
-	MqBase[*datas.ReceiveFrame, *datas.Message]
+	mqBase[*datas.ReceiveFrame]
 }
 
 func (rmq *ReceiveMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer, error) {
-	baseProducer, err := rmq.MqBase.CreateProducer(nsqLookupdAddress, &datas.FrameByter{})
+	baseProducer, err := rmq.mqBase.CreateProducer(nsqLookupdAddress, &datas.ReceiveFrameEncoder{})
 	if err != nil {
 		return nil, err
 	}
-	return &ReceiveProducer{ProducerBase: *baseProducer}, nil
+	return &ReceiveProducer{producerBase: *baseProducer}, nil
 }
 
 func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer, error) {
-	baseConsumer, err := rmq.MqBase.CreateConsumer(nsqLookupdAddress, &datas.MessageParser{})
+	baseConsumer, err := rmq.mqBase.CreateConsumer(nsqLookupdAddress, &datas.ReceiveFrameParser{})
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +105,41 @@ func (rmq *ReceiveMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer
 }
 
 func NewRecieveMq() (*ReceiveMq, error) {
-	mq, err := newBaseMq[*datas.ReceiveFrame, *datas.Message]("input_message")
+	mq, err := newMqBase[*datas.ReceiveFrame]("input_message")
 	if err != nil {
 		return nil, err
 	}
 	return &ReceiveMq{*mq}, nil
+}
+
+type SendMq struct {
+	mqBase[*datas.SendFrame]
+}
+
+func (rmq *SendMq) CreateProducer(nsqLookupdAddress string) (*ReceiveProducer, error) {
+	baseProducer, err := rmq.mqBase.CreateProducer(nsqLookupdAddress, &datas.MessageEncoder{})
+	if err != nil {
+		return nil, err
+	}
+	return &ReceiveProducer{producerBase: *baseProducer}, nil
+}
+
+func (rmq *SendMq) CreateConsumer(nsqLookupdAddress string) (*ReceiveConsumer, error) {
+	baseConsumer, err := rmq.mqBase.CreateConsumer(nsqLookupdAddress, &datas.MessageParser{})
+	if err != nil {
+		return nil, err
+	}
+	return &ReceiveConsumer{
+		Consumer: *baseConsumer,
+	}, nil
+}
+
+func NewSendMq() (*SendMq, error) {
+	mq, err := newMqBase[*datas.ReceiveFrame, *datas.Message]("input_message")
+	if err != nil {
+		return nil, err
+	}
+	return &SendMq{*mq}, nil
 }
 
 // type SendMq struct {

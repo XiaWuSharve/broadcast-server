@@ -18,7 +18,7 @@ type Processor[ConnType any] struct {
 var _ mq.Handler[*datas.ReceiveFrame] = (*Processor[struct{}])(nil)
 
 func New[ConnType any](consumer *mq.ReceiveConsumer, producer *mq.SendProducer) *Processor[ConnType] {
-	return &Processor[ConnType]{consumer, producer, &datas.Frame2Message{}}
+	return &Processor[ConnType]{consumer, producer, &datas.ReceiveFrame2Message{}}
 }
 
 // TODO 抽出发送入队逻辑

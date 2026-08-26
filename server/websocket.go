@@ -7,9 +7,6 @@ import (
 	"net/http"
 
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/config"
-	"github.com/XiaWuSharve/whisperly/utils"
-	"github.com/cespare/xxhash"
 	"github.com/gorilla/websocket"
 )
 
@@ -22,9 +19,7 @@ var _ Listener = (*WebSocketServer)(nil)
 
 func NewWebSocketServer(rBufSize int, wBufSize int) *WebSocketServer {
 	server := &WebSocketServer{
-		ServerBase: ServerBase[*websocket.Conn]{
-			registered: utils.NewShardMap[string, *client.Client](config.Cfg.RegistryMaxBucketNum, func(k string) uint64 { return xxhash.Sum64([]byte(k)) }),
-		},
+		ServerBase: ServerBase[*websocket.Conn]{},
 		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  rBufSize,
 			WriteBufferSize: wBufSize,

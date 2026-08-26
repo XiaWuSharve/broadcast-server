@@ -3,6 +3,9 @@ package utils
 import (
 	"math/bits"
 	"sync"
+	"unsafe"
+
+	"github.com/cespare/xxhash"
 )
 
 type ShardMap[K comparable, V any] struct {
@@ -69,4 +72,8 @@ func (cm *ConcurrentMap[K, V]) Delete(k K) {
 	cm.rwMu.Lock()
 	defer cm.rwMu.Unlock()
 	delete(cm.m, k)
+}
+
+func HashFunc[T any](t T) uint64 {
+	return xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&t)))
 }

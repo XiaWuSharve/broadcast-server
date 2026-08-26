@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/utils"
+	"github.com/XiaWuSharve/whisperly/router"
 )
 
 type Server interface {
@@ -22,8 +22,8 @@ type Listener interface {
 
 type ServerBase[ConnType any] struct {
 	Listener
-	registered *utils.ShardMap[string, *client.Client]
-	wg         sync.WaitGroup
+	router router.Router
+	wg     sync.WaitGroup
 }
 
 var _ Server = (*ServerBase[any])(nil)
@@ -45,7 +45,7 @@ func (s *ServerBase[C]) Start(ctx context.Context, listener net.Listener) error 
 }
 
 func (s *ServerBase[C]) CreateConn(ctx context.Context, c *client.Client) {
-
+	c.Id = s.router.AddConn(c.Conn)
 	s.wg.Go(func() {
 		if err := s.Handle(ctx, c); err != nil {
 			if errors.Is(err, net.ErrClosed) {

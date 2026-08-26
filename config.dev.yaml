@@ -1,6 +1,6 @@
 protocol: kcp
 host: 0.0.0.0
-port: 3002
+port: 3001
 read-buffer-size: 1024
 write-buffer-size: 1024
 time-tolerance: 300 # seconds
