@@ -9,7 +9,7 @@ import (
 )
 
 type Producer[MessType any] interface {
-	Enqueue(message MessType) (chan *nsq.ProducerTransaction, error)
+	Enqueue(data MessType) (chan *nsq.ProducerTransaction, error)
 	Close()
 }
 

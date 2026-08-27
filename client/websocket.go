@@ -11,9 +11,11 @@ import (
 
 type WsConn struct {
 	*websocket.Conn
-	Err    error
-	reader io.Reader
-	n      int
+	Err      error
+	reader   io.Reader
+	n        int
+	Id       int64
+	SendChan chan []byte
 }
 
 var _ Conn = (*WsConn)(nil)
@@ -42,4 +44,7 @@ func (c *WsConn) GetReader() io.Reader {
 
 func (c *WsConn) Send(data []byte) error {
 	return c.Conn.WriteMessage(websocket.BinaryMessage, data)
+}
+func (c *WsConn) GetId() int64 {
+	return c.Id
 }

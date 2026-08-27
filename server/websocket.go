@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,8 +38,7 @@ func (s *WebSocketServer) Listen(ctx context.Context, listener net.Listener) err
 			slog.Error("unable to upgrade the HTTP server connection to the WebSocket protocol", "err", err)
 			return
 		}
-		c := client.Client{Conn: &client.WsConn{Conn: conn}}
-		s.CreateConn(ctx, &c)
+		s.CreateConn(ctx, &client.WsConn{Conn: conn, Id: datas.GenId()})
 	})
 
 	return http.Serve(listener, nil)

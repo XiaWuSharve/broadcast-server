@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -16,7 +15,9 @@ import (
 )
 
 type Conn interface {
+	GetId() int64
 	GetReader() io.Reader
+	GetSendChan() chan *datas.RoutedSendFrame
 	Send(data []byte) error
 }
 
@@ -33,21 +34,49 @@ type Client struct {
 	streamDecoder datas.ReceiveFrameStreamDecoder
 	ReceiveErr    error
 	SendErr       error
+	pool          ConnPool
 }
 
 var _ mq.Handler[*datas.SendFrame] = (*Client)(nil)
 
 func (c *Client) Start(ctx context.Context) error {
+	s.wg.Go(func() {
+		if err := s.Handle(ctx, c); err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			slog.Error("failed to handle read", "err", err, "id", c.Id)
+		}
+	})
+
+	s.wg.Go(func() {
+		if err := c.HandleSend(ctx); err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			slog.Error("failed to HandleSend", "err", err, "id", c.Id)
+		}
+	})
+	s.wg.Go(func() {
+		if err := c.HandleReceive(ctx); err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			slog.Error("failed to HandleReceive", "err", err, "id", c.Id)
+		}
+	})
+
 	c.wg.Go(func() {
 		if err := c.HandleReceive(ctx); !errors.Is(err, net.ErrClosed) {
 			slog.Error("failed to handle receive", "err", c.ReceiveErr)
 		}
 	})
-	c.wg.Wait()
+	c.pool.AddConn(c.Conn)
 	return nil
 }
 
 func (c *Client) HandleReceive(ctx context.Context) error {
+	// 只处理与业务无关的连接相关的逻辑
 	reader := bufio.NewReader(c.GetReader())
 	for {
 		c.ReceiveFrame, c.ReceiveErr = c.streamDecoder.Parse(reader)
@@ -79,23 +108,6 @@ func (c *Client) HandleReceive(ctx context.Context) error {
 func (c *Client) HandleSend(ctx context.Context) error {
 	if c.ReceiveErr = c.SendConsumer.Start(c); c.ReceiveErr != nil {
 		return fmt.Errorf("failed to start sending consumer: %w", c.ReceiveErr)
-	}
-	return nil
-}
-
-func (c *Client) Handle(frame *datas.SendFrame) error {
-	c.HeaderBytes[0] = byte(frame.AckStatus)
-	binary.BigEndian.PutUint64(c.HeaderBytes[1:9], uint64(frame.ConnId))
-	binary.BigEndian.PutUint32(c.HeaderBytes[9:13], uint32(len(frame.Payload)))
-	slog.Debug("client sending kcp frame")
-	c.SendErr = c.Conn.Send(append(c.HeaderBytes[0:13], frame.Payload...))
-
-	// TODO 入刷写队列
-	if c.SendErr != nil {
-		if errors.Is(c.SendErr, net.ErrClosed) {
-			return c.SendErr
-		}
-		return fmt.Errorf("failed to send message: %w", c.SendErr)
 	}
 	return nil
 }

@@ -7,7 +7,8 @@ type ReceiveFrame struct {
 }
 
 type SendFrame struct {
-	AckStatus AckStatus
-	ConnId    int64
-	Payload   []byte
+	ReceiverId string
+	AckStatus  AckStatus
+	ConnId     int64
+	Payload    []byte
 }

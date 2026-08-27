@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"github.com/XiaWuSharve/whisperly/client"
+	"github.com/XiaWuSharve/whisperly/datas"
 )
 
 type KcpServer struct {
@@ -37,9 +38,6 @@ func (s *KcpServer) Listen(ctx context.Context, listener net.Listener) error {
 			<-ctx.Done()
 			session.Close()
 		})
-		c := client.Client{
-			Conn: &client.KcpConn{Conn: session},
-		}
-		s.CreateConn(ctx, &c)
+		s.CreateConn(ctx, &client.KcpConn{Conn: session, Id: datas.GenId()})
 	}
 }

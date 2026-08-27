@@ -1,35 +1,53 @@
 package router
 
 import (
+	"encoding/binary"
+	"errors"
+	"log/slog"
+
 	"github.com/XiaWuSharve/whisperly/client"
-	"github.com/XiaWuSharve/whisperly/config"
 	"github.com/XiaWuSharve/whisperly/datas"
-	"github.com/XiaWuSharve/whisperly/utils"
+	"github.com/XiaWuSharve/whisperly/mq"
 )
 
 type Router struct {
-	// only shared memory structure are allowed to be coroutine safe (to avoid lock acquiring)
-	table *utils.ShardMap[int64, client.Conn]
+	consumer      mq.Consumer[*datas.SendFrame]
+	pool          *client.ConnPool
+	Err           error
+	storeProducer mq.Producer[*datas.Cache]
+	send2cache    datas.Converter[*datas.SendFrame, *datas.Cache]
 }
 
-// coroutine safe
-func (r *Router) AddConn(c client.Conn) int64 {
-	id := datas.GenId()
-	r.table.Set(id, c)
-	return id
+var _ mq.Handler[*datas.SendFrame] = (*Router)(nil)
+
+var ErrConnNotFound = errors.New("conn not exist")
+
+func (r *Router) Start() error {
+	return r.consumer.Start(r)
 }
 
-// coroutine safe
-func (r *Router) Find(id int64) (client.Conn, bool) {
-	return r.table.Get(id)
-}
+var ErrWaitingRetry = errors.New("send channel is full")
 
-var ErrClient
+func (r *Router) Handle(frame *datas.SendFrame) error {
+	conn, ok := r.pool.Conns.Get(frame.ConnId)
+	if !ok {
+		cacheData, err := r.send2cache.Convert(frame)
+		if err != nil {
+			slog.Error("failed to convert send to cache data", "err", err)
+			return nil
+		}
+		r.storeProducer.Enqueue(cacheData)
+	}
 
-func (r *Router) Forward(frame *datas.SendFrame) error {
-	,  := r.Find(frame.ReceiverId)
-}
+	r.HeaderBytes[0] = byte(frame.AckStatus)
+	binary.BigEndian.PutUint64(r.HeaderBytes[1:9], uint64(frame.ConnId))
+	binary.BigEndian.PutUint32(r.HeaderBytes[9:13], uint32(len(frame.Payload)))
+	slog.Debug("client sending kcp frame")
+	select {
+	case conn.GetSendChan() <- append(r.HeaderBytes[0:13], frame.Payload...):
+	default:
+		return ErrWaitingRetry
+	}
 
-func New() *Router {
-	return &Router{utils.NewShardMap[int64, client.Conn](config.Cfg.RegistryMaxBucketNum, utils.HashFunc)}
+	return nil
 }
