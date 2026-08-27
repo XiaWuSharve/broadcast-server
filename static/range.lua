@@ -1,0 +1,1 @@
+-- return redis.call('MGET', 'min_offset:'..KEYS[1], 'max_offset:'..KEYS[1])

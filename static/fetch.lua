@@ -1,14 +1,12 @@
+-- fetch.lua
 local pending_key = 'pending:'..KEYS[1]
-local processing_key = 'processing:'..KEYS[1]
-local count = tonumber(ARGV[1]) or 0
+local min_offset_key = 'min_offset:'..KEYS[1]
+local request_offset = tonumber(ARGV[1]) or 0
 
-local items = redis.call('LPOP', pending_key, count)
-if not items then
+local min_offset = tonumber(redis.call('GET', min_offset_key)) or 0
+if request_offset < min_offset then
     return nil
 end
-
-for i = 1, #items do
-    redis.call('RPUSH', processing_key, items[i])
-end
+local items = redis.call('LRANGE', pending_key, 0, request_offset - min_offset)
 
 return items
