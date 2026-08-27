@@ -7,16 +7,17 @@ option java_package = "com.github.xiawusharve.webrtc";
 // 不支持描述符、嵌套构建器
 option optimize_for = LITE_RUNTIME;
 
-// enum MessageType {
-//   MESSAGE_TYPE_UNSPECIFIED = 0;
-//   CONNECT                  = 1;
-//   CHAT                     = 2;
-//   CANDIDATE                = 3;
-// }
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  CONNECT                  = 1;
+  CHAT                     = 2;
+  CANDIDATE                = 3;
+  FETCH = 4;
+}
 
 // TODO 不知道是否合理，到时候再改吧
 message Message {
-  // MessageType type = 1;
+  MessageType type = 1;
   string sender_id    = 2;
   string receiver_id  = 3;
   int64  created_time = 4;

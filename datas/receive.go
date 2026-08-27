@@ -14,9 +14,11 @@ import (
 )
 
 type ReceiveFrame struct {
-	CreatedTime int64
-	FullBuf     []byte
-	Payload     []byte
+	CreatedTime   int64
+	Type          MessageType
+	RequestOffset int64
+	FullBuf       []byte
+	Payload       []byte
 }
 
 type ReceiveFrameEncoder struct{}

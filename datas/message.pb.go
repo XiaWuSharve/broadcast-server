@@ -21,6 +21,61 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type MessageType int32
+
+const (
+	MessageType_MESSAGE_TYPE_UNSPECIFIED MessageType = 0
+	MessageType_CONNECT                  MessageType = 1
+	MessageType_CHAT                     MessageType = 2
+	MessageType_CANDIDATE                MessageType = 3
+	MessageType_FETCH                    MessageType = 4
+)
+
+// Enum value maps for MessageType.
+var (
+	MessageType_name = map[int32]string{
+		0: "MESSAGE_TYPE_UNSPECIFIED",
+		1: "CONNECT",
+		2: "CHAT",
+		3: "CANDIDATE",
+		4: "FETCH",
+	}
+	MessageType_value = map[string]int32{
+		"MESSAGE_TYPE_UNSPECIFIED": 0,
+		"CONNECT":                  1,
+		"CHAT":                     2,
+		"CANDIDATE":                3,
+		"FETCH":                    4,
+	}
+)
+
+func (x MessageType) Enum() *MessageType {
+	p := new(MessageType)
+	*p = x
+	return p
+}
+
+func (x MessageType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MessageType) Descriptor() protoreflect.EnumDescriptor {
+	return file_message_proto_enumTypes[0].Descriptor()
+}
+
+func (MessageType) Type() protoreflect.EnumType {
+	return &file_message_proto_enumTypes[0]
+}
+
+func (x MessageType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MessageType.Descriptor instead.
+func (MessageType) EnumDescriptor() ([]byte, []int) {
+	return file_message_proto_rawDescGZIP(), []int{0}
+}
+
 type AckStatus int32
 
 const (
@@ -57,11 +112,11 @@ func (x AckStatus) String() string {
 }
 
 func (AckStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_message_proto_enumTypes[0].Descriptor()
+	return file_message_proto_enumTypes[1].Descriptor()
 }
 
 func (AckStatus) Type() protoreflect.EnumType {
-	return &file_message_proto_enumTypes[0]
+	return &file_message_proto_enumTypes[1]
 }
 
 func (x AckStatus) Number() protoreflect.EnumNumber {
@@ -70,7 +125,7 @@ func (x AckStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AckStatus.Descriptor instead.
 func (AckStatus) EnumDescriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{0}
+	return file_message_proto_rawDescGZIP(), []int{1}
 }
 
 // 从 Go 的 MessageUnitType 常量迁移来的枚举
@@ -113,11 +168,11 @@ func (x MessageUnitType) String() string {
 }
 
 func (MessageUnitType) Descriptor() protoreflect.EnumDescriptor {
-	return file_message_proto_enumTypes[1].Descriptor()
+	return file_message_proto_enumTypes[2].Descriptor()
 }
 
 func (MessageUnitType) Type() protoreflect.EnumType {
-	return &file_message_proto_enumTypes[1]
+	return &file_message_proto_enumTypes[2]
 }
 
 func (x MessageUnitType) Number() protoreflect.EnumNumber {
@@ -126,18 +181,18 @@ func (x MessageUnitType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MessageUnitType.Descriptor instead.
 func (MessageUnitType) EnumDescriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_message_proto_rawDescGZIP(), []int{2}
 }
 
 // TODO 不知道是否合理，到时候再改吧
 type Message struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// MessageType type = 1;
-	SenderId    string `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
-	ReceiverId  string `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
-	CreatedTime int64  `protobuf:"varint,4,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
-	MessageId   string `protobuf:"bytes,11,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
-	ConnId      int64  `protobuf:"varint,12,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Type        MessageType            `protobuf:"varint,1,opt,name=type,proto3,enum=message.MessageType" json:"type,omitempty"`
+	SenderId    string                 `protobuf:"bytes,2,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
+	ReceiverId  string                 `protobuf:"bytes,3,opt,name=receiver_id,json=receiverId,proto3" json:"receiver_id,omitempty"`
+	CreatedTime int64                  `protobuf:"varint,4,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
+	MessageId   string                 `protobuf:"bytes,11,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	ConnId      int64                  `protobuf:"varint,12,opt,name=conn_id,json=connId,proto3" json:"conn_id,omitempty"`
 	// Types that are valid to be assigned to Data:
 	//
 	//	*Message_Ack
@@ -178,6 +233,13 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
 	return file_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Message) GetType() MessageType {
+	if x != nil {
+		return x.Type
+	}
+	return MessageType_MESSAGE_TYPE_UNSPECIFIED
 }
 
 func (x *Message) GetSenderId() string {
@@ -621,8 +683,9 @@ var File_message_proto protoreflect.FileDescriptor
 
 const file_message_proto_rawDesc = "" +
 	"\n" +
-	"\rmessage.proto\x12\amessage\"\xf1\x02\n" +
-	"\aMessage\x12\x1b\n" +
+	"\rmessage.proto\x12\amessage\"\x9b\x03\n" +
+	"\aMessage\x12(\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x14.message.MessageTypeR\x04type\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\tR\bsenderId\x12\x1f\n" +
 	"\vreceiver_id\x18\x03 \x01(\tR\n" +
 	"receiverId\x12!\n" +
@@ -655,7 +718,13 @@ const file_message_proto_rawDesc = "" +
 	"\rmessage_chain\x18\x03 \x03(\v2\x14.message.MessageUnitR\fmessageChain\"U\n" +
 	"\vMessageUnit\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.message.MessageUnitTypeR\x04type\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage*H\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage*\\\n" +
+	"\vMessageType\x12\x1c\n" +
+	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aCONNECT\x10\x01\x12\b\n" +
+	"\x04CHAT\x10\x02\x12\r\n" +
+	"\tCANDIDATE\x10\x03\x12\t\n" +
+	"\x05FETCH\x10\x04*H\n" +
 	"\tAckStatus\x12\x1a\n" +
 	"\x16ACK_STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSENDING\x10\x04\x12\b\n" +
@@ -682,33 +751,35 @@ func file_message_proto_rawDescGZIP() []byte {
 	return file_message_proto_rawDescData
 }
 
-var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_message_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_message_proto_goTypes = []any{
-	(AckStatus)(0),       // 0: message.AckStatus
-	(MessageUnitType)(0), // 1: message.MessageUnitType
-	(*Message)(nil),      // 2: message.Message
-	(*Sdp)(nil),          // 3: message.Sdp
-	(*Connect)(nil),      // 4: message.Connect
-	(*Ack)(nil),          // 5: message.Ack
-	(*Candidate)(nil),    // 6: message.Candidate
-	(*Chat)(nil),         // 7: message.Chat
-	(*MessageUnit)(nil),  // 8: message.MessageUnit
+	(MessageType)(0),     // 0: message.MessageType
+	(AckStatus)(0),       // 1: message.AckStatus
+	(MessageUnitType)(0), // 2: message.MessageUnitType
+	(*Message)(nil),      // 3: message.Message
+	(*Sdp)(nil),          // 4: message.Sdp
+	(*Connect)(nil),      // 5: message.Connect
+	(*Ack)(nil),          // 6: message.Ack
+	(*Candidate)(nil),    // 7: message.Candidate
+	(*Chat)(nil),         // 8: message.Chat
+	(*MessageUnit)(nil),  // 9: message.MessageUnit
 }
 var file_message_proto_depIdxs = []int32{
-	5, // 0: message.Message.ack:type_name -> message.Ack
-	6, // 1: message.Message.candidate:type_name -> message.Candidate
-	7, // 2: message.Message.chat:type_name -> message.Chat
-	3, // 3: message.Message.call:type_name -> message.Sdp
-	3, // 4: message.Message.answer:type_name -> message.Sdp
-	0, // 5: message.Ack.status:type_name -> message.AckStatus
-	8, // 6: message.Chat.message_chain:type_name -> message.MessageUnit
-	1, // 7: message.MessageUnit.type:type_name -> message.MessageUnitType
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	0, // 0: message.Message.type:type_name -> message.MessageType
+	6, // 1: message.Message.ack:type_name -> message.Ack
+	7, // 2: message.Message.candidate:type_name -> message.Candidate
+	8, // 3: message.Message.chat:type_name -> message.Chat
+	4, // 4: message.Message.call:type_name -> message.Sdp
+	4, // 5: message.Message.answer:type_name -> message.Sdp
+	1, // 6: message.Ack.status:type_name -> message.AckStatus
+	9, // 7: message.Chat.message_chain:type_name -> message.MessageUnit
+	2, // 8: message.MessageUnit.type:type_name -> message.MessageUnitType
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_message_proto_init() }
@@ -728,7 +799,7 @@ func file_message_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_message_proto_rawDesc), len(file_message_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
