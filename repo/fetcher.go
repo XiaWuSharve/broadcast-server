@@ -7,14 +7,26 @@ import (
 	"sync/atomic"
 
 	"github.com/XiaWuSharve/whisperly/datas"
+	"github.com/XiaWuSharve/whisperly/mq"
 	"github.com/redis/go-redis/v9"
 )
 
-type Fetcher struct {
-	rds     *redis.Client
-	decoder datas.Decoder[*datas.Cache]
-	state   atomic.Pointer[State]
+type Handler interface {
+	Handle([]*datas.Cache) (int64, error)
 }
+
+// TODO 考虑不要每个Conn都有一个Fetcher
+type Fetcher struct {
+	rds              *redis.Client
+	decoder          datas.Decoder[*datas.Cache]
+	state            atomic.Pointer[State]
+	receiveProducer  mq.Producer[*datas.ReceiveFrame]
+	sendProducer     mq.Producer[*datas.SendFrame]
+	receiveConverter datas.Converter[*datas.Cache, *datas.ReceiveFrame]
+	sendConverter    datas.Converter[*datas.Cache, *datas.SendFrame]
+}
+
+var _ Handler = (*Fetcher)(nil)
 
 type State struct {
 	requestOffset int64
@@ -31,6 +43,25 @@ func NewFetcher(rds *redis.Client) *Fetcher {
 	return f
 }
 
+func (f *Fetcher) Handle(data []*datas.Cache) (int64, error) {
+	for i, v := range data {
+		if v.Processed {
+			sendD, _ := f.sendConverter.Convert(v)
+			_, err := f.sendProducer.Enqueue(sendD)
+			if err != nil {
+				return 0, fmt.Errorf("cannot enqueue send producer: %w", err)
+			}
+		} else {
+			receiveD, _ := f.receiveConverter.Convert(v)
+			_, err := f.receiveProducer.Enqueue(receiveD)
+			if err != nil {
+				return 0, fmt.Errorf("cannot enqueue receive producer: %w", err)
+			}
+		}
+	}
+}
+
+// TODO 考虑根据ID分片
 func (f *Fetcher) MergeRequest(id string, requestOffset int64, handler Handler) error {
 	for {
 		old := f.state.Load()
@@ -50,6 +81,14 @@ func (f *Fetcher) MergeRequest(id string, requestOffset int64, handler Handler) 
 		}
 		cancel()
 	}
+}
+
+func (f *Fetcher) MergeRequestAsync(id string, requestOffset int64, handler Handler) chan error {
+	signal := make(chan error)
+	go func() {
+		signal <- f.MergeRequest(id, requestOffset, handler)
+	}()
+	return signal
 }
 
 func (f *Fetcher) Fetch(ctx context.Context, id string, requestOffset int64, handler Handler) error {

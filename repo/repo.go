@@ -12,18 +12,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Handler interface {
-	Handle([]*datas.Cache) int
-}
-
 type Client struct {
-	rds              redis.Client
-	consumer         mq.Consumer[datas.Cache]
-	receiveProducer  mq.Producer[*datas.ReceiveFrame]
-	sendProducer     mq.Producer[*datas.SendFrame]
-	receiveConverter datas.Converter[*datas.Cache, *datas.ReceiveFrame]
-	sendConverter    datas.Converter[*datas.Cache, *datas.SendFrame]
-	encoder          datas.Encoder[*datas.Cache]
+	rds      redis.Client
+	consumer mq.Consumer[datas.Cache]
+	encoder  datas.Encoder[*datas.Cache]
 }
 
 var _ mq.Handler[*datas.Cache] = (*Client)(nil)
