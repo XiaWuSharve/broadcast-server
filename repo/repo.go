@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/XiaWuSharve/whisperly/mq"
@@ -16,9 +17,26 @@ type Handler interface {
 }
 
 type Client struct {
-	rds      redis.Client
-	consumer mq.Consumer[datas.Cache]
-	decoder  datas.Decoder[*datas.Cache]
+	rds              redis.Client
+	consumer         mq.Consumer[datas.Cache]
+	decoder          datas.Decoder[*datas.Cache]
+	receiveProducer  mq.Producer[*datas.ReceiveFrame]
+	sendProducer     mq.Producer[*datas.SendFrame]
+	receiveConverter datas.Converter[*datas.Cache, *datas.ReceiveFrame]
+	sendConverter    datas.Converter[*datas.Cache, *datas.SendFrame]
+	encoder          datas.Encoder[*datas.Cache]
+}
+
+var _ mq.Handler[*datas.Cache] = (*Client)(nil)
+
+func (c *Client) Handle(data *datas.Cache) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	err := c.Save(ctx, data.ReceiveId, c.encoder.ToByte(data))
+	if err != nil {
+		return fmt.Errorf("unable to save to redis: %w", err)
+	}
+	return nil
 }
 
 const (
@@ -50,7 +68,7 @@ func init() {
 
 func (c *Client) Save(ctx context.Context, id string, data []byte) error {
 	_, err := pushScript.Run(ctx, c.rds, []string{id}, data).Int()
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		return fmt.Errorf("unable to enqueue redis: %w", err)
 	}
 	return nil

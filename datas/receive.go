@@ -10,23 +10,16 @@ import (
 	"time"
 
 	"github.com/XiaWuSharve/whisperly/config"
-	"github.com/bwmarrin/snowflake"
 	"google.golang.org/protobuf/proto"
 )
 
-type Encoder[MessType any] interface {
-	ToByte(data MessType) []byte
+type ReceiveFrame struct {
+	CreatedTime int64
+	FullBuf     []byte
+	Payload     []byte
 }
 
-type Converter[S, D any] interface {
-	Convert(source S) (D, error)
-}
-
-type Decoder[MessType any] interface {
-	Parse(data []byte) (MessType, error)
-}
-
-type ReceiveFrameEncoder struct {}
+type ReceiveFrameEncoder struct{}
 
 var _ Encoder[*ReceiveFrame] = (*ReceiveFrameEncoder)(nil)
 
@@ -46,30 +39,6 @@ func (mp *ReceiveFrameParser) Parse(data []byte) (*ReceiveFrame, error) {
 	mp.frame.FullBuf = data
 	mp.frame.Payload = data[8:]
 	return &mp.frame, nil
-}
-
-type MessageEncoder struct{
-	Bytes []byte
-}
-
-var _ Encoder[*Message] = (*MessageEncoder)(nil)
-
-func (p *MessageEncoder) ToByte(mess *Message) []byte {
-	p.Bytes, _ = proto.Marshal(mess)
-	return p.Bytes
-}
-
-type MessageParser struct {
-	message     Message
-}
-
-var _ Decoder[*Message] = (*MessageParser)(nil)
-
-func (mp *MessageParser) Parse(data []byte) (*Message, error) {
-	if err := proto.Unmarshal(data, &mp.message); err != nil {
-		return nil, err
-	}
-	return &mp.message, nil
 }
 
 type ReceiveFrameStreamDecoder struct {
@@ -133,29 +102,4 @@ func (f2m *ReceiveFrame2Message) Convert(frame *ReceiveFrame) (*Message, error) 
 	}
 	f2m.Message.CreatedTime = frame.CreatedTime
 	return &f2m.Message, nil
-}
-
-type Message2SendFrame struct {
-	frame SendFrame
-	bytes []byte
-	Err error
-}
-
-var _ Converter[*Message, *SendFrame] = (*Message2SendFrame)(nil)
-
-func (m2f *Message2SendFrame) Convert(mess *Message) (*SendFrame, error) {
-	m2f.frame.AckStatus = mess.GetAck().Status
-	m2f.frame.ConnId = mess.ConnId
-	m2f.bytes, m2f.Err = proto.Marshal(mess)
-	if m2f.Err != nil {
-		return nil, m2f.Err
-	}
-	m2f.frame.Payload = m2f.bytes
-	return &m2f.frame, nil
-}
-
-var Ids *snowflake.Node
-
-func GenId() int64 {
-	return Ids.Generate().Int64()
 }
