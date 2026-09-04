@@ -5,20 +5,29 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/XiaWuSharve/whisperly/mq"
 	"github.com/redis/go-redis/v9"
 )
 
-type Handler interface {
-	Handle([]*datas.Cache) int
-}
-
 type Client struct {
 	rds      redis.Client
 	consumer mq.Consumer[datas.Cache]
-	decoder  datas.Decoder[*datas.Cache]
+	encoder  datas.Encoder[*datas.Cache]
+}
+
+var _ mq.Handler[*datas.Cache] = (*Client)(nil)
+
+func (c *Client) Handle(data *datas.Cache) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	err := c.save(ctx, data.ReceiveId, c.encoder.ToByte(data))
+	if err != nil {
+		return fmt.Errorf("unable to save to redis: %w", err)
+	}
+	return nil
 }
 
 const (
@@ -48,32 +57,10 @@ func init() {
 	pushScript = LoadScript(PUSH_SCRIPT_FILENAME)
 }
 
-func (c *Client) Save(ctx context.Context, id string, data []byte) error {
+func (c *Client) save(ctx context.Context, id string, data []byte) error {
 	_, err := pushScript.Run(ctx, c.rds, []string{id}, data).Int()
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		return fmt.Errorf("unable to enqueue redis: %w", err)
-	}
-	return nil
-}
-
-// 双队列
-func (c *Client) Fetch(ctx context.Context, id string, requestOffset int, handler Handler) error {
-	key := []string{id}
-	messageStrings, err := fetchScript.Run(ctx, c.rds, key, requestOffset).StringSlice()
-	if err != redis.Nil {
-		return fmt.Errorf("failed to execute fetch script: %w", err)
-	}
-	messages := make([]*datas.Cache, len(messageStrings))
-	for i, v := range messageStrings {
-		messages[i], err = c.decoder.Parse([]byte(v))
-		if err != nil {
-			return fmt.Errorf("failed to parse message: %w", err)
-		}
-	}
-	ackedOffset := handler.Handle(messages)
-	_, err = ackScript.Run(ctx, c.rds, key, ackedOffset).Int64()
-	if err != redis.Nil {
-		return fmt.Errorf("failed to execute ack script: %w", err)
 	}
 	return nil
 }

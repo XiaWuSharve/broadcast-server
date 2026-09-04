@@ -17,7 +17,7 @@ import (
 type Conn interface {
 	GetId() int64
 	GetReader() io.Reader
-	GetSendChan() chan *datas.RoutedSendFrame
+	GetSendChan() chan *datas.RoutedSend
 	Send(data []byte) error
 }
 
@@ -25,54 +25,44 @@ type Client struct {
 	Conn
 	wg              sync.WaitGroup
 	Id              int64
-	ReceiveProducer mq.Producer[*datas.ReceiveFrame]
-	SendConsumer    mq.Consumer[*datas.SendFrame]
-	ReceiveFrame    *datas.ReceiveFrame
+	processProducer mq.Producer
+	storeProducer   mq.Producer
+	SendConsumer    mq.Consumer[*datas.Send]
+	ReceiveFrame    *datas.Receive
 	HeaderBytes     [13]byte
 	// TODO ?
-	streamEncoder datas.Encoder[*datas.SendFrame]
+	ACKSend       datas.RoutedSend
+	routedSend    *datas.RoutedSend
 	streamDecoder datas.ReceiveFrameStreamDecoder
 	ReceiveErr    error
 	SendErr       error
-	pool          ConnPool
+	pool          *ConnPool
+	ok            bool
+	routed2cache  datas.Converter[*datas.RoutedSend, *datas.Cache]
+	cache         *datas.Cache
 }
 
-var _ mq.Handler[*datas.SendFrame] = (*Client)(nil)
+func NewClient() *Client {
+	return &Client{
+		ACKSend: datas.RoutedSend{
+			Payload: make([]byte, 1),
+		},
+	}
+}
 
-func (c *Client) Start(ctx context.Context) error {
-	s.wg.Go(func() {
-		if err := s.Handle(ctx, c); err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
-			}
-			slog.Error("failed to handle read", "err", err, "id", c.Id)
-		}
-	})
-
-	s.wg.Go(func() {
-		if err := c.HandleSend(ctx); err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
-			}
-			slog.Error("failed to HandleSend", "err", err, "id", c.Id)
-		}
-	})
-	s.wg.Go(func() {
-		if err := c.HandleReceive(ctx); err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
-			}
-			slog.Error("failed to HandleReceive", "err", err, "id", c.Id)
+func (c *Client) Start(ctx context.Context) int64 {
+	c.wg.Go(func() {
+		if err := c.HandleSend(ctx); !errors.Is(err, net.ErrClosed) {
+			slog.Error("failed to handle send", "err", err)
 		}
 	})
 
 	c.wg.Go(func() {
 		if err := c.HandleReceive(ctx); !errors.Is(err, net.ErrClosed) {
-			slog.Error("failed to handle receive", "err", c.ReceiveErr)
+			slog.Error("failed to handle receive", "err", err)
 		}
 	})
-	c.pool.AddConn(c.Conn)
-	return nil
+	return c.pool.AddConn(c.Conn)
 }
 
 func (c *Client) HandleReceive(ctx context.Context) error {
@@ -89,13 +79,13 @@ func (c *Client) HandleReceive(ctx context.Context) error {
 				return fmt.Errorf("failed to handle receive: %w", c.ReceiveErr)
 			}
 		}
-		_, c.ReceiveErr = c.ReceiveProducer.Enqueue(c.ReceiveFrame)
+		_, c.ReceiveErr = c.processProducer.Enqueue(c.ReceiveFrame)
 		if c.ReceiveErr != nil {
 			return fmt.Errorf("failed to enqueue: %w", c.ReceiveErr)
 		}
-		c.ReceiveErr = c.Handle(&datas.SendFrame{
-			AckStatus: datas.AckStatus_SENDING,
-		})
+		c.ACKSend.Type = datas.MessageType_ACK
+		c.ACKSend.AckStatus = datas.AckStatus_SENDING
+		c.ReceiveErr = c.Send(c.ACKSend.ToByte())
 		if c.ReceiveErr != nil {
 			if errors.Is(c.ReceiveErr, net.ErrClosed) {
 				return c.ReceiveErr
@@ -106,8 +96,29 @@ func (c *Client) HandleReceive(ctx context.Context) error {
 }
 
 func (c *Client) HandleSend(ctx context.Context) error {
-	if c.ReceiveErr = c.SendConsumer.Start(c); c.ReceiveErr != nil {
-		return fmt.Errorf("failed to start sending consumer: %w", c.ReceiveErr)
+	defer func() {
+		if c.ok {
+			c.cache, c.SendErr = c.routed2cache.Convert(c.routedSend)
+			if c.SendErr != nil {
+				slog.Error("failed to conver routed send to cache: %w", c.SendErr)
+			}
+			_, c.SendErr = c.storeProducer.Enqueue(c.cache)
+			if c.SendErr != nil {
+				slog.Error("failed to enqueue store mq", "err", c.SendErr)
+			}
+		}
+	}()
+	// 只处理与业务无关的连接相关的逻辑
+	for {
+		c.routedSend, c.ok = <-c.GetSendChan()
+		if !c.ok {
+			return nil
+		}
+		if c.SendErr = c.Send(c.routedSend.ToByte()); c.SendErr != nil {
+			if errors.Is(c.SendErr, net.ErrClosed) {
+				return c.SendErr
+			}
+			return fmt.Errorf("cannot send: %w", c.SendErr)
+		}
 	}
-	return nil
 }

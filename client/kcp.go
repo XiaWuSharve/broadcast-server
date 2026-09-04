@@ -10,8 +10,13 @@ import (
 type KcpConn struct {
 	net.Conn
 	Err      error
-	SendChan chan *datas.RoutedSendFrame
+	SendChan chan *datas.RoutedSend
 	Id       int64
+}
+
+// GetSendChan implements [Conn].
+func (c *KcpConn) GetSendChan() chan *datas.RoutedSend {
+	return c.SendChan
 }
 
 var _ Conn = (*KcpConn)(nil)

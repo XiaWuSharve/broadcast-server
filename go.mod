@@ -12,11 +12,15 @@ require (
 )
 
 require (
+	github.com/aliyun/aliyun-tablestore-go-sdk v1.9.3 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/klauspost/reedsolomon v1.12.0 // indirect
 	github.com/nsqio/go-nsq v1.1.0 // indirect

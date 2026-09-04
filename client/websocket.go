@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,7 +16,12 @@ type WsConn struct {
 	reader   io.Reader
 	n        int
 	Id       int64
-	SendChan chan []byte
+	SendChan chan *datas.RoutedSend
+}
+
+// GetSendChan implements [Conn].
+func (c *WsConn) GetSendChan() chan *datas.RoutedSend {
+	return c.SendChan
 }
 
 var _ Conn = (*WsConn)(nil)

@@ -8,41 +8,34 @@ import (
 	"github.com/nsqio/go-nsq"
 )
 
-type Producer[MessType any] interface {
-	Enqueue(data MessType) (chan *nsq.ProducerTransaction, error)
-	Close()
-}
-
-type producerBase[MessType any] struct {
-	Byter    datas.Encoder[MessType]
+type Producer struct {
 	Producer *nsq.Producer
-	Mq       Mq
+	Topic    string
 }
 
-func (p *producerBase[MessType]) Enqueue(message MessType) (chan *nsq.ProducerTransaction, error) {
+func (p *Producer) Enqueue(data datas.Encodable) (chan *nsq.ProducerTransaction, error) {
 	doneChan := make(chan *nsq.ProducerTransaction)
-	body := p.Byter.ToByte(message)
-	if err := p.Producer.PublishAsync(p.Mq.GetTopic(), body, doneChan); err != nil {
+	if err := p.Producer.PublishAsync(p.Topic, data.ToByte(), doneChan); err != nil {
 		return nil, fmt.Errorf("failed to publish message: %w", err)
 	}
 	return doneChan, nil
 }
 
-func (p *producerBase[MessType]) Close() {
+func (p *Producer) Close() {
 	// Gracefully stop the producer.
 	p.Producer.Stop()
 }
 
-type ReceiveProducer struct {
-	producerBase[*datas.ReceiveFrame]
-}
+// type ReceiveProducer struct {
+// 	producerBase
+// }
 
-var _ Producer[*datas.ReceiveFrame] = (*ReceiveProducer)(nil)
+// var _ Producer[*datas.ReceiveFrame] = (*ReceiveProducer)(nil)
 
-type SendProducer struct {
-	producerBase[*datas.Message]
-}
+// type SendProducer struct {
+// 	producerBase[*datas.Message]
+// }
 
-var _ Producer[*datas.Message] = (*SendProducer)(nil)
+// var _ Producer[*datas.Message] = (*SendProducer)(nil)
 
 // type BatchFlushProducer = Producer[[]byte]
