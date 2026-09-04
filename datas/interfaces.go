@@ -1,7 +1,8 @@
 package datas
 
-type Encoder[MessType any] interface {
-	ToByte(data MessType) []byte
+type Encoder interface {
+	ToByte() []byte
+	GetRequiredBufLen() int
 }
 
 type Converter[S, D any] interface {
