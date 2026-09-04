@@ -1,35 +1,47 @@
 package mq
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/XiaWuSharve/whisperly/datas"
 	"github.com/nsqio/go-nsq"
 )
 
 type Consumer[MessType any] struct {
-	parser   datas.Decoder[MessType]
-	Consumer *nsq.Consumer
-	Mq       Mq
+	// 交给子类初始化
+	Decoder           datas.Decoder[MessType]
+	Consumer          *nsq.Consumer
+	NsqLookupdAddress string
 }
 
 type Handler[MessType any] interface {
 	Handle(message MessType) error
 }
 
+var ErrRequeue = errors.New("require requeue")
+
 func (c *Consumer[M]) Start(handler Handler[M]) error {
 	h := func(message *nsq.Message) error {
-		data, err := c.parser.Parse(message.Body)
+		data, err := c.Decoder.Parse(message.Body)
 		if err != nil {
-			return err
+			slog.Error("failed to parse during handling", "err", err)
+			return nil
 		}
-		return handler.Handle(data)
+		if err := handler.Handle(data); err != nil {
+			if errors.Is(err, ErrRequeue) {
+				return err
+			}
+			slog.Error("failed to handle", "err", err)
+		}
+		return nil
 	}
 	c.Consumer.AddHandler(nsq.HandlerFunc(h))
 
 	// Use nsqlookupd to discover nsqd instances.
 	// See also ConnectToNSQD, ConnectToNSQDs, ConnectToNSQLookupds.
-	err := c.Consumer.ConnectToNSQLookupd(c.Mq.GetNsqLookupdAddress())
+	err := c.Consumer.ConnectToNSQLookupd(c.NsqLookupdAddress)
 	if err != nil {
 		return fmt.Errorf("consumer failed to connect to nsq lookup damon: %w", err)
 	}
@@ -41,9 +53,6 @@ func (c *Consumer[MessType]) Stop() chan int {
 	return c.Consumer.StopChan
 }
 
-type ReceiveConsumer struct {
-	Consumer[*datas.ReceiveFrame]
-}
-
-// type SendConsumer = Consumer[[]byte]
-// type BatchFlushConsumer = Consumer[[]byte]
+type ReceiveConsumer = Consumer[*datas.Receive]
+type SendConsumer = Consumer[*datas.Send]
+type StoreConsumer = Consumer[*datas.Cache]

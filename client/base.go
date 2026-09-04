@@ -25,10 +25,10 @@ type Client struct {
 	Conn
 	wg              sync.WaitGroup
 	Id              int64
-	processProducer mq.Producer[*datas.ReceiveFrame]
-	storeProducer   mq.Producer[*datas.Cache]
-	SendConsumer    mq.Consumer[*datas.SendFrame]
-	ReceiveFrame    *datas.ReceiveFrame
+	processProducer mq.Producer
+	storeProducer   mq.Producer
+	SendConsumer    mq.Consumer[*datas.Send]
+	ReceiveFrame    *datas.Receive
 	HeaderBytes     [13]byte
 	// TODO ?
 	ACKSend       datas.RoutedSend

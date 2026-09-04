@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type ReceiveFrame struct {
+type Receive struct {
 	CreatedTime   int64
 	Type          MessageType
 	RequestOffset int64
@@ -21,22 +21,26 @@ type ReceiveFrame struct {
 	Payload       []byte
 }
 
-type ReceiveFrameEncoder struct{}
+var _ Encodable = (*Receive)(nil)
 
-var _ Encoder[*ReceiveFrame] = (*ReceiveFrameEncoder)(nil)
-
-func (p *ReceiveFrameEncoder) ToByte(data *ReceiveFrame) []byte {
-	binary.BigEndian.PutUint64(data.FullBuf[0:8], uint64(data.CreatedTime))
-	return data.FullBuf
+// GetRequiredBufLen implements [Encodable].
+func (r *Receive) GetRequiredBufLen() int {
+	return 8
 }
 
-type ReceiveFrameParser struct {
-	frame ReceiveFrame
+// ToByte implements [Encodable].
+func (r *Receive) ToByte() []byte {
+	binary.BigEndian.PutUint64(r.FullBuf[0:8], uint64(r.CreatedTime))
+	return r.FullBuf
 }
 
-var _ Decoder[*ReceiveFrame] = (*ReceiveFrameParser)(nil)
+type ReceiveDecoder struct {
+	frame Receive
+}
 
-func (mp *ReceiveFrameParser) Parse(data []byte) (*ReceiveFrame, error) {
+var _ Decoder[*Receive] = (*ReceiveDecoder)(nil)
+
+func (mp *ReceiveDecoder) Parse(data []byte) (*Receive, error) {
 	mp.frame.CreatedTime = int64(binary.BigEndian.Uint64(data[0:8]))
 	mp.frame.FullBuf = data
 	mp.frame.Payload = data[8:]
@@ -46,7 +50,7 @@ func (mp *ReceiveFrameParser) Parse(data []byte) (*ReceiveFrame, error) {
 type ReceiveFrameStreamDecoder struct {
 	Rbuf       [12]byte
 	Wbuf       [12]byte
-	frame      ReceiveFrame
+	frame      Receive
 	PayloadLen int
 	Err        error
 }
@@ -64,7 +68,7 @@ func ValidateTime(createdTime int64) bool {
 	return true
 }
 
-func (fsd *ReceiveFrameStreamDecoder) Parse(r io.Reader) (*ReceiveFrame, error) {
+func (fsd *ReceiveFrameStreamDecoder) Parse(r io.Reader) (*Receive, error) {
 	// receive frame |CreatedTime 8B|Len 4B -> 1Unit = 1B|
 	// send frame |AckType 1B|MessageId 8B|Len 4B -> 1Unit = 1B|
 	if _, fsd.Err = io.ReadFull(r, fsd.Rbuf[:]); fsd.Err != nil {
@@ -96,9 +100,9 @@ type ReceiveFrame2Message struct {
 	Message Message
 }
 
-var _ Converter[*ReceiveFrame, *Message] = (*ReceiveFrame2Message)(nil)
+var _ Converter[*Receive, *Message] = (*ReceiveFrame2Message)(nil)
 
-func (f2m *ReceiveFrame2Message) Convert(frame *ReceiveFrame) (*Message, error) {
+func (f2m *ReceiveFrame2Message) Convert(frame *Receive) (*Message, error) {
 	if err := proto.Unmarshal(frame.Payload, &f2m.Message); err != nil {
 		return nil, err
 	}

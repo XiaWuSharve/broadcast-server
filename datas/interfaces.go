@@ -1,6 +1,6 @@
 package datas
 
-type Encoder interface {
+type Encodable interface {
 	ToByte() []byte
 	GetRequiredBufLen() int
 }

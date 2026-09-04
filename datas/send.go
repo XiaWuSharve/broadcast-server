@@ -1,6 +1,6 @@
 package datas
 
-type SendFrame struct {
+type Send struct {
 	ReceiverId string
 	AckStatus  AckStatus
 	ConnId     int64
