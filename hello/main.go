@@ -1,4 +1,4 @@
-package main
+package hello
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	endPoint := "http://localhost:8083"
+	endPoint := "http://101.37.76.38:8084"
 	instanceName := "x02caat39505"
 	tableName := "hello_timeline"
 	AkId := "<>"
