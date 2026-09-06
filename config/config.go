@@ -24,6 +24,10 @@ type Config struct {
 	SenderNum            int      `mapstructure:"sender-num" yaml:"sender-num"`
 	ProcessorNum         int      `mapstructure:"processor-num" yaml:"processor-num"`
 	NodeId               int64    `mapstructure:"node-id" yaml:"node-id"`
+	Endpoint             string   `mapstructure:"endpoint" yaml:"endpoint"`
+	Instance             string   `mapstructure:"instance" yaml:"instance"`
+	AkId                 string   `mapstructure:"ak-id" yaml:"ak-id"`
+	AkSecret             string   `mapstructure:"ak-secret" yaml:"ak-secret"`
 }
 
 var Cfg = Config{
@@ -39,7 +43,11 @@ var Cfg = Config{
 	ReceiverNum:          10,
 	SenderNum:            10,
 	ProcessorNum:         3,
-	NodeId: 0,
+	NodeId:               0,
+	Endpoint:             "http://101.37.76.38:8084",
+	Instance:             "x02caat39505",
+	AkId:                 "abcdefg",
+	AkSecret:             "abcdefg",
 }
 
 func Init(cmd *cobra.Command) {
@@ -58,6 +66,10 @@ func Init(cmd *cobra.Command) {
 	cmd.PersistentFlags().Int("sender-num", Cfg.SenderNum, "sender num")
 	cmd.PersistentFlags().Int("processor-num", Cfg.ProcessorNum, "processor num")
 	cmd.PersistentFlags().Int64("node-id", Cfg.NodeId, "node id")
+	cmd.PersistentFlags().String("endpoint", Cfg.Endpoint, "endpoint")
+	cmd.PersistentFlags().String("instance", Cfg.Instance, "instance")
+	cmd.PersistentFlags().String("ak-id", Cfg.AkId, "ak id")
+	cmd.PersistentFlags().String("ak-secret", Cfg.AkSecret, "ak secret")
 }
 
 func Bind(cmd *cobra.Command) {
