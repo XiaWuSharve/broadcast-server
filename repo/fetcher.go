@@ -20,10 +20,10 @@ type Fetcher struct {
 	rds              *redis.Client
 	decoder          datas.Decoder[*datas.Cache]
 	state            atomic.Pointer[State]
-	receiveProducer  mq.Producer[*datas.ReceiveFrame]
-	sendProducer     mq.Producer[*datas.SendFrame]
-	receiveConverter datas.Converter[*datas.Cache, *datas.ReceiveFrame]
-	sendConverter    datas.Converter[*datas.Cache, *datas.SendFrame]
+	receiveProducer  mq.Producer
+	sendProducer     mq.Producer
+	receiveConverter datas.Converter[*datas.Cache, *datas.Receive]
+	sendConverter    datas.Converter[*datas.Cache, *datas.Send]
 }
 
 var _ Handler = (*Fetcher)(nil)
@@ -44,13 +44,13 @@ func NewFetcher(rds *redis.Client) *Fetcher {
 }
 
 func (f *Fetcher) Handle(data []*datas.Cache) (int64, error) {
-	for i, v := range data {
+	for _, v := range data {
 		if v.Processed {
-			sendD, _ := f.sendConverter.Convert(v)
-			_, err := f.sendProducer.Enqueue(sendD)
-			if err != nil {
-				return 0, fmt.Errorf("cannot enqueue send producer: %w", err)
-			}
+			// sendD, _ := f.sendConverter.Convert(v)
+			// _, err := f.sendProducer.Enqueue(sendD)
+			// if err != nil {
+			// 	return 0, fmt.Errorf("cannot enqueue send producer: %w", err)
+			// }
 		} else {
 			receiveD, _ := f.receiveConverter.Convert(v)
 			_, err := f.receiveProducer.Enqueue(receiveD)
@@ -59,6 +59,7 @@ func (f *Fetcher) Handle(data []*datas.Cache) (int64, error) {
 			}
 		}
 	}
+	return 0, nil
 }
 
 // TODO 考虑根据ID分片
@@ -104,8 +105,8 @@ func (f *Fetcher) Fetch(ctx context.Context, id string, requestOffset int64, han
 			return fmt.Errorf("failed to parse message: %w", err)
 		}
 	}
-	ackedOffset := handler.Handle(messages)
-	_, err = ackScript.Run(ctx, f.rds, key, ackedOffset).Int64()
+	// ackedOffset := handler.Handle(messages)
+	// _, err = ackScript.Run(ctx, f.rds, key, ackedOffset).Int64()
 	if err != redis.Nil {
 		return fmt.Errorf("failed to execute ack script: %w", err)
 	}

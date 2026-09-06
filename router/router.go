@@ -11,14 +11,14 @@ import (
 )
 
 type Router struct {
-	consumer      mq.Consumer[*datas.SendFrame]
+	consumer      mq.Consumer[*datas.Send]
 	pool          *client.ConnPool
 	Err           error
-	storeProducer mq.Producer[*datas.Cache]
-	send2cache    datas.Converter[*datas.SendFrame, *datas.Cache]
+	storeProducer mq.Producer
+	send2cache    datas.Converter[*datas.Send, *datas.Cache]
 }
 
-var _ mq.Handler[*datas.SendFrame] = (*Router)(nil)
+var _ mq.Handler[*datas.Send] = (*Router)(nil)
 
 var ErrConnNotFound = errors.New("conn not exist")
 
@@ -28,7 +28,7 @@ func (r *Router) Start() error {
 
 var ErrWaitingRetry = errors.New("send channel is full")
 
-func (r *Router) Handle(frame *datas.SendFrame) error {
+func (r *Router) Handle(frame *datas.Send) error {
 	conn, ok := r.pool.Conns.Get(frame.ConnId)
 	if !ok {
 		cacheData, err := r.send2cache.Convert(frame)

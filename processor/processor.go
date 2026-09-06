@@ -10,19 +10,19 @@ import (
 
 type Processor[ConnType any] struct {
 	consumer *mq.ReceiveConsumer
-	sender   *mq.SendProducer
+	sender   *mq.Producer
 	// registry  *registry.UserRepo
-	converter datas.Converter[*datas.ReceiveFrame, *datas.Message]
+	converter datas.Converter[*datas.Receive, *datas.Message]
 }
 
-var _ mq.Handler[*datas.ReceiveFrame] = (*Processor[struct{}])(nil)
+var _ mq.Handler[*datas.Receive] = (*Processor[struct{}])(nil)
 
-func New[ConnType any](consumer *mq.ReceiveConsumer, producer *mq.SendProducer) *Processor[ConnType] {
+func New[ConnType any](consumer *mq.ReceiveConsumer, producer *mq.Producer) *Processor[ConnType] {
 	return &Processor[ConnType]{consumer, producer, &datas.ReceiveFrame2Message{}}
 }
 
 // TODO 抽出发送入队逻辑
-func (p *Processor[C]) Handle(frame *datas.ReceiveFrame) error {
+func (p *Processor[C]) Handle(frame *datas.Receive) error {
 	slog.Debug("received raw message", "payload", frame.Payload)
 	m, err := p.converter.Convert(frame)
 	slog.Debug("message", "mess", m.String())
