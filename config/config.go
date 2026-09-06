@@ -11,55 +11,86 @@ import (
 var cfgFile string
 
 type Config struct {
-	Protocol             string   `mapstructure:"protocol" yaml:"protocol"`
-	Host                 string   `mapstructure:"host" yaml:"host"`
-	Port                 int      `mapstructure:"port" yaml:"port"`
-	ReadBufferSize       int      `mapstructure:"read-buffer-size" yaml:"read-buffer-size"`
-	WriteBufferSize      int      `mapstructure:"write-buffer-size" yaml:"write-buffer-size"`
-	TimeTolerance        int64    `mapstructure:"time-tolerance" yaml:"time-tolerance"`
-	RegistryMaxBucketNum uint64   `mapstructure:"registry-max-bucket-num" yaml:"registry-max-bucket-num"`
-	NsqdAddress          []string `mapstructure:"nsqd-address" yaml:"nsqd-address"`
-	NsqlookupdAddress    string   `mapstructure:"nsqlookupd-address" yaml:"nsqlookupd-address"`
-	ReceiverNum          int      `mapstructure:"receiver-num" yaml:"receiver-num"`
-	SenderNum            int      `mapstructure:"sender-num" yaml:"sender-num"`
-	ProcessorNum         int      `mapstructure:"processor-num" yaml:"processor-num"`
-	NodeId               int64    `mapstructure:"node-id" yaml:"node-id"`
-	Endpoint             string   `mapstructure:"endpoint" yaml:"endpoint"`
-	Instance             string   `mapstructure:"instance" yaml:"instance"`
-	AkId                 string   `mapstructure:"ak-id" yaml:"ak-id"`
-	AkSecret             string   `mapstructure:"ak-secret" yaml:"ak-secret"`
+	server     *ServerConfig     `mapstructure:"server"`
+	mq         *MqConfig         `mapstructure:"mq"`
+	component  *ComponentConfig  `mapstructure:"component"`
+	tablestore *TablestoreConfig `mapstructure:"tablestore"`
+}
+
+type ServerConfig struct {
+	Protocol        string `mapstructure:"protocol"`
+	Host            string `mapstructure:"host"`
+	Port            int    `mapstructure:"port"`
+	ReadBufferSize  int    `mapstructure:"read-buffer-size"`
+	WriteBufferSize int    `mapstructure:"write-buffer-size"`
+	TimeTolerance   int64  `mapstructure:"time-tolerance"`
+	NodeId          int64  `mapstructure:"node-id"`
+}
+
+type MqConfig struct {
+	NsqdAddress       []string `mapstructure:"nsqd-address"`
+	NsqlookupdAddress string   `mapstructure:"nsqlookupd-address"`
+}
+
+type ComponentConfig struct {
+	ReceiverNum  int `mapstructure:"receiver-num"`
+	SenderNum    int `mapstructure:"sender-num"`
+	ProcessorNum int `mapstructure:"processor-num"`
+}
+
+type TablestoreConfig struct {
+	Endpoint      string `mapstructure:"endpoint"`
+	Instance      string `mapstructure:"instance"`
+	AkId          string `mapstructure:"ak-id"`
+	AkSecret      string `mapstructure:"ak-secret"`
+	BatchChanSize int    `mapstructure:"batch-chan-size"`
+}
+
+var Server = &ServerConfig{
+	Protocol:        "kcp",
+	Host:            "0.0.0.0",
+	Port:            3001,
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	TimeTolerance:   300,
+	NodeId:          0,
+}
+
+var Mq = &MqConfig{
+	NsqdAddress:       []string{"localhost:4150"},
+	NsqlookupdAddress: "localhost:4161",
+}
+
+var Component = &ComponentConfig{
+	ReceiverNum:  10,
+	SenderNum:    10,
+	ProcessorNum: 3,
+}
+
+var Tablestore = &TablestoreConfig{
+	Endpoint: "http://101.37.76.38:8084",
+	Instance: "x02caat39505",
+	AkId:     "abcdefg",
+	AkSecret: "abcdefg",
 }
 
 var Cfg = Config{
-	Protocol:             "kcp",
-	Host:                 "0.0.0.0",
-	Port:                 3001,
-	ReadBufferSize:       1024,
-	WriteBufferSize:      1024,
-	TimeTolerance:        300,
-	RegistryMaxBucketNum: 128,
-	NsqdAddress:          []string{"localhost:4150"},
-	NsqlookupdAddress:    "localhost:4161",
-	ReceiverNum:          10,
-	SenderNum:            10,
-	ProcessorNum:         3,
-	NodeId:               0,
-	Endpoint:             "http://101.37.76.38:8084",
-	Instance:             "x02caat39505",
-	AkId:                 "abcdefg",
-	AkSecret:             "abcdefg",
+	server:     Server,
+	mq:         Mq,
+	component:  Component,
+	tablestore: Tablestore,
 }
 
 func Init(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
 	// cmd
+	// TODO 支持嵌套绑定命令行
 	cmd.PersistentFlags().String("protocol", Cfg.Protocol, "protocol for the server (support: kcp, websocket)")
 	cmd.PersistentFlags().String("host", Cfg.Host, "host to bind")
 	cmd.PersistentFlags().IntP("port", "p", Cfg.Port, "port to listen on")
 	cmd.PersistentFlags().Int("read-buffer-size", Cfg.ReadBufferSize, "read buffer size")
 	cmd.PersistentFlags().Int("write-buffer-size", Cfg.WriteBufferSize, "write buffer size")
 	cmd.PersistentFlags().Int64("time-tolerance", Cfg.TimeTolerance, "time tolerance in seconds")
-	cmd.PersistentFlags().Uint64("registry-max-bucket-num", Cfg.RegistryMaxBucketNum, "registry max bucket num")
 	cmd.PersistentFlags().StringSlice("nsqd-address", Cfg.NsqdAddress, "nsqd address list")
 	cmd.PersistentFlags().String("nsqlookupd-address", Cfg.NsqlookupdAddress, "nsqlookupd address")
 	cmd.PersistentFlags().Int("receiver-num", Cfg.ReceiverNum, "receiver num")
