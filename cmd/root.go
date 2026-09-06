@@ -1,5 +1,5 @@
 /*
-Copyright © 2025 Sharve
+Copyright © 2025 XiaWuSharve <sharve@foxmail.com>
 */
 package cmd
 
