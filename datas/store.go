@@ -1,7 +1,7 @@
 package datas
 
 type Store struct {
-	MsgId      string
+	Sequence   int64
 	ReceiverId string
 	Payload    []byte
 }
