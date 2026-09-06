@@ -1,4 +1,4 @@
--- ack.lua
+-- ack.lua 倒序版
 local pending_key = 'pending:'..KEYS[1]
 local min_offset_key = 'min_offset:'..KEYS[1]
 local ack_offset = tonumber(ARGV[1]) or 0
