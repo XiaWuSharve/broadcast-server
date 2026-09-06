@@ -1,14 +1,15 @@
-package hello
+package repo
 
 import (
 	"fmt"
 	"log"
+	"testing"
 	"time"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/timeline"
 )
 
-func main() {
+func TestTableStore(t *testing.T) {
 	endPoint := "http://101.37.76.38:8084"
 	instanceName := "x02caat39505"
 	tableName := "hello_timeline"
@@ -124,4 +125,5 @@ func main() {
 
 	//close im store to avoid async writer goroutine leak
 	im.Close()
+
 }
