@@ -10,3 +10,8 @@ nsqlookupd-address: "localhost:4161"
 receiver-num: 10
 sender-num: 10
 processor-num: 3
+node-id: 0
+endpoint: http://101.37.76.38:8084
+instance: x02caat39505
+ak-id: abcdef
+ak-secret: abcdef
